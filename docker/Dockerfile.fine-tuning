@@ -1,0 +1,10 @@
+# Copyright (C) 2022-2023 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM intel/ai-workflows:odqa-haystack-api
+
+COPY . /home/user/application 
+
+RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+
+RUN pip install opencv-python

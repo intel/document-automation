@@ -1,0 +1,62 @@
+# Copyright (C) 2022-2023 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+version: "3"
+services:
+  haystack-api:
+    image: "intel/ai-workflows:odqa-haystack-api"
+    ports:
+      - 8000:8000
+    restart: on-failure
+    #cpuset: "0"
+    volumes:
+      - $APPLICATION:/home/user/application
+      
+    environment:
+      - DOCUMENTSTORE_PARAMS_HOST=elasticsearch
+      - DOCUMENTSTORE_PARAMS_PORT=9200
+      - PIPELINE_YAML_PATH=$PIPELINE_PATH
+      - QUERY_PIPELINE_NAME=$PIPELINE_NAME
+      - INDEX_NAME=$INDEX_NAME
+      - CONCURRENT_REQUEST_PER_WORKER=48
+      - http_proxy=$HTTP_PROXY
+      - https_proxy=$HTTPS_PROXY
+      - no_proxy=$NO_PROXY
+      
+    depends_on:
+      - elasticsearch
+      
+    # Starts REST API with only 2 workers so that it can be run on systems with just 4GB of memory
+    # If you need to handle large loads of incoming requests and have memory to spare, consider increasing the number of workers
+    command: "/bin/bash -c 'sleep 10 && gunicorn rest_api.application:app -b 0.0.0.0 -k uvicorn.workers.UvicornWorker --workers 1 --timeout 600'"
+    
+  elasticsearch:
+    image: "elasticsearch:7.9.2"
+    volumes:
+      - $ESDB:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    restart: on-failure
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xmx4g -Xms4g
+
+  ui:
+    image: "intel/ai-workflows:odqa-haystack-ui"
+    #network_mode: host
+    ports:
+      - 8501:8501
+    restart: on-failure
+    volumes:
+      - $UI_CONFIG_DIR:/home/user/data/
+    environment:
+      - API_ENDPOINT=http://haystack-api:8000
+      - PIPELINE_PATH=$PIPELINE_PATH
+      - DISABLE_FILE_UPLOAD=True
+      - DEFAULT_QUESTION_AT_STARTUP
+      - DEFAULT_DOCS_FROM_RETRIEVER
+      - DEFAULT_NUMBER_OF_ANSWERS
+      - http_proxy=$HTTP_PROXY
+      - https_proxy=$HTTPS_PROXY
+      - no_proxy=$NO_PROXY
+    command: "/bin/bash -c 'sleep 15 && python -m streamlit run ui/webapp.py'"

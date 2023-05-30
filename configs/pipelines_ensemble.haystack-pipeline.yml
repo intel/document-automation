@@ -1,0 +1,59 @@
+# To allow your IDE to autocomplete and validate your YAML pipelines, name them as <name of your choice>.haystack-pipeline.yml
+
+version: ignore
+
+components:    # define all the building-blocks for Pipeline
+  - name: ES_DocumentStore
+    type: ElasticsearchDocumentStore  # consider using MilvusDocumentStore or WeaviateDocumentStore for scaling to large number of documents
+    params:
+      host: localhost
+      port: 9200
+      index: dureadervis-documents
+
+  - name: BM25_Retriever
+    type: BM25Retriever
+    params:
+      document_store: ES_DocumentStore    # params can reference other components defined in the YAML
+      top_k: 100
+
+
+  - name: FAISS_DocumentStore
+    type: FAISSDocumentStore  # consider using MilvusDocumentStore or WeaviateDocumentStore for scaling to large number of documents
+    params:
+      faiss_index_path: /home/user/output/index_files/faiss-indexfile.faiss
+
+  - name: DPR_Retriever
+    type: DensePassageRetriever
+    params:
+      document_store: FAISS_DocumentStore    # params can reference other components defined in the YAML
+      top_k: 100
+      query_embedding_model: "/home/user/output/dpr_models/my_dpr_model/query_encoder"
+      passage_embedding_model: "/home/user/output/dpr_models/my_dpr_model/passage_encoder"
+      max_seq_len_query: 64
+      max_seq_len_passage: 500
+      batch_size: 16
+      embed_title: False
+      use_fast_tokenizers: True
+      xlm_roberta: True
+  
+  - name: Ensembler
+    type: JoinDocuments
+    params:
+        join_mode: "merge" 
+        weights: [1, 1.5] 
+        top_k_join: 5
+    
+  - name: Doc2Answers       # custom-name for the component; helpful for visualization & debugging
+    type: Docs2Answers
+    
+pipelines:
+  - name: query    # a sample extractive-qa Pipeline
+    nodes:
+      - name: BM25_Retriever
+        inputs: [Query]
+      - name: DPR_Retriever
+        inputs: [Query]
+      - name: Ensembler
+        inputs: [BM25_Retriever, DPR_Retriever]
+      - name: Doc2Answers
+        inputs: [Ensembler]

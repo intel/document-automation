@@ -1,0 +1,24 @@
+metadata:
+  name: document-automation
+proxy: nil
+model_name: my_dpr_model
+image:
+  name: intel/ai-workflows
+pvc:
+  storage: 15Gi
+retrieval_method: ensemble
+dataset:
+  type: <local/nfs>
+  local:
+    application_path: nil
+    docvqa_path: nil
+    es_data_path: nil
+    postgre_data_path: nil
+    dataset_path: nil
+    output_path: nil
+  nfs:
+    server: nil
+    path: nil
+    application_path: nil
+    docvqa_path: nil
+    dataset_path: nil

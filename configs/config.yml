@@ -1,0 +1,45 @@
+dataset:
+  name: Dureader-vis
+  questions:
+    - question: "白衣服撒红酒怎么处理"
+
+    - question: "长沙到莆田多少公里"
+
+    - question: "嘉兴到天台大巴"
+
+    - question: "书房造句"
+
+pipelines:
+  - name: pipelines_bm25.haystack-pipeline.yml
+    top_k_sliders:
+      - name: answer
+        desc: Max. number of answers
+        default_value: 3
+        keys:
+          - key: Retriever
+            param: top_k
+  
+  - name: pipelines_dpr.haystack-pipeline.yml
+    top_k_sliders:
+      - name: answer
+        desc: "Max. number of answers"
+        default_value: 3
+        keys:
+          - key: Retriever
+            param: top_k
+  
+  - name: pipelines_ensemble.haystack-pipeline.yml
+    top_k_sliders:
+      - name: answer
+        desc: "Max. number of answers"
+        default_value: 3
+        keys:
+          - key: Ensembler
+            param: top_k_join
+      
+      - name: retriever
+        desc: "Max. number of documents from retriever"
+        default_value: 3
+        keys:
+          - key: BM25_Retriever
+            param: top_k

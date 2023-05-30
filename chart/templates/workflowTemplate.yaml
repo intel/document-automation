@@ -1,0 +1,473 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: {{ .Values.metadata.name }}
+spec:
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: pre-process
+            template: fine-tuning-phase
+            arguments:
+              parameters:
+                - name: workflow
+                  value: beta-doc-automation-fine-tuning
+                - name: cmd
+                  value: 'bash scripts/run_process_dataset.sh'
+          - name: fine-tuning
+            template: fine-tuning-phase
+            arguments:
+              parameters:
+                - name: workflow
+                  value: beta-doc-automation-fine-tuning
+                - name: cmd
+                  value: 'bash scripts/run_dpr_training.sh'
+            dependencies:
+              - pre-process
+          - name: elasticsearch-db
+            template: elasticsearch
+            dependencies:
+              - fine-tuning
+          - name: postgresql-db
+            template: postgresql
+            dependencies:
+              - fine-tuning
+          - name: indexing
+            template: indexing-phase
+            arguments:
+              parameters:
+               - name: workflow
+                 value: beta-doc-automation-indexing
+               - name: postgre_ip
+                 value: "{{ `{{tasks.postgresql-db.ip}}` }}"
+               - name: es_ip
+                 value: "{{ `{{tasks.elasticsearch-db.ip}}` }}"
+               - name: cmd
+                 value: 'ray start --node-ip-address=${HEAD_IP} --head --dashboard-host="0.0.0.0" --dashboard-port=8265 --disable-usage-stats && python src/test_pocr.py &&  bash scripts/run_distributed_indexing_argo.sh'
+            dependencies:
+             - fine-tuning
+             - elasticsearch-db
+             - postgresql-db
+          - name: performance-retrieval
+            template: indexing-phase
+            arguments:
+             parameters:
+               - name: workflow
+                 value: beta-doc-automation-indexing
+               - name: postgre_ip
+                 value: "{{ `{{tasks.postgresql-db.ip}}` }}"
+               - name: es_ip
+                 value: "{{ `{{tasks.elasticsearch-db.ip}}` }}"
+               - name: cmd
+                 value: "bash scripts/make_retrieval_eval_csv.sh && bash scripts/run_retrieval_eval_argo.sh"
+            dependencies:
+             - indexing
+          - name: haystack-api
+            template: haystack-api-phase
+            arguments:
+              parameters:
+                - name: es_ip
+                  value: "{{ `{{tasks.elasticsearch-db.ip}}` }}"
+                - name: postgre_ip
+                  value: "{{ `{{tasks.postgresql-db.ip}}` }}"
+            dependencies:
+              - performance-retrieval
+          - name: ui
+            template: ui-phase
+            arguments:
+              parameters:
+                - name: haystack_api_ip
+                  value: "{{ `{{tasks.haystack-api.ip}}` }}"
+            dependencies:
+              - haystack-api
+      failFast: true
+    - name: fine-tuning-phase
+      inputs:
+        parameters:
+          - name: workflow
+          - name: cmd
+      outputs:
+        artifacts:
+          - name: 'fine-tuning-output'
+            path: /home/user/output
+            archive:
+              none: {}
+      container:
+        image: '{{ .Values.image.name }}:{{"{{ inputs.parameters.workflow }}"}}'
+        network_mode: "host"
+        privileged: true
+        command:
+          - sh
+        args:
+          - '-c'
+          - '{{"{{ inputs.parameters.cmd }}"}}'
+        env:
+          - name: http_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: https_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: MODEL_NAME
+            value: '{{"{{workflow.parameters.model_name}}"}}'
+        volumeMounts:
+            {{ if eq .Values.dataset.type "local" }}
+          - name: application-dir
+            mountPath: /home/user/application
+          - name: docvqa-dir
+            mountPath: /home/user/docvqa
+            {{ end }}
+            {{ if eq .Values.dataset.type "nfs" }}
+          - name: nfs-dir
+            mountPath: /home/user/application
+            subPath: {{ .Values.dataset.nfs.application_path }}
+          - name: nfs-dir
+            mountPath: /home/user/docvqa
+            subPath: {{ .Values.dataset.nfs.docvqa_path }}
+            {{ end }}
+          - name: output-dir
+            mountPath: /home/user/output
+        imagePullPolicy: Always
+        workingDir: /home/user/application
+      volumes:
+          {{ if eq .Values.dataset.type "local" }}
+        - name: application-dir
+          hostPath:
+            path: {{ .Values.dataset.local.application_path }}
+        - name: docvqa-dir
+          hostPath:
+            path: {{ .Values.dataset.local.docvqa_path }}
+          {{ end }}
+          {{ if eq .Values.dataset.type "nfs" }}
+        - name: nfs-dir
+          nfs:
+            server: {{ .Values.dataset.nfs.server }}
+            path: {{ .Values.dataset.nfs.path }}
+            readOnly: true
+          {{ end }}
+    - name: elasticsearch
+      daemon: true
+      outputs:
+        artifacts:
+          - name: 'es-output'
+            path: /usr/share/elasticsearch/data
+            archive:
+              none: {}
+      container:
+        image: elasticsearch:7.9.2
+        network_mode: "host"
+        securityContext:
+          privileged: true
+        ports:
+          - name : es-port
+            containerPort: 9200
+            hostPort: 9200
+        command:
+          - sh
+        args:
+          - "-c"
+          - "chmod 777 /usr/share/elasticsearch/data&&/usr/local/bin/docker-entrypoint.sh"
+        shm_size: 8GB
+        imagePullPolicy: Always
+        env:
+          - name: discovery.type
+            value: single-node
+          - name: ES_JAVA_OPTS
+            value: "-Xmx8g -Xms8g"
+      {{ if eq .Values.dataset.type "local" }}
+      volumeMounts:
+          - name: es-data-dir
+            mountPath: /usr/share/elasticsearch/data
+      volumes:
+        - name: es-data-dir
+          hostPath:
+            path: {{ .Values.dataset.local.es_data_path }}
+      {{ end }}
+    - name: postgresql
+      daemon: true
+      outputs:
+        artifacts:
+          - name: 'postgresql-output'
+            path: /var/lib/postgresql/data/
+            archive:
+              none: {}
+      container:
+        image: postgres:14.1-alpine
+        network_mode: "host"
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        ports:
+          - name: postgres-port
+            containerPort: 5432
+            hostPort: 5432
+        command:
+          - docker-entrypoint.sh
+        args:
+          - '-c'
+          - 'max_connections=200'
+          - '-c'
+          - 'listen_addresses=*'
+        env:
+          - name: POSTGRES_USER
+            value: postgres
+          - name: POSTGRES_PASSWORD
+            value: postgres
+        volumeMounts:
+            {{ if eq .Values.dataset.type "local" }}
+          - name: postgres-dir
+            mountPath: /var/lib/postgresql/data/
+          - name: psql-init-sql-dir
+            mountPath: /docker-entrypoint-initdb.d/psql_init.sql
+            {{ end }}
+            {{ if eq .Values.dataset.type "nfs" }}
+          - name: nfs-dir
+            mountPath: /docker-entrypoint-initdb.d/psql_init.sql
+            subPath: {{ .Values.dataset.nfs.application_path }}/docker/psql_init.sql
+            {{ end }}
+      volumes:
+          {{ if eq .Values.dataset.type "local" }}
+        - name: postgres-dir
+          hostPath:
+            path: {{ .Values.dataset.local.postgre_data_path }}
+        - name: psql-init-sql-dir
+          hostPath:
+            path: {{ .Values.dataset.local.application_path }}/docker/psql_init.sql
+        - name: pg-hba-conf
+          hostPath:
+            path: {{ .Values.dataset.local.application_path }}/docker/pg_hba.conf
+          {{ end }}
+          {{ if eq .Values.dataset.type "nfs" }}
+        - name: nfs-dir
+          nfs:
+            server: {{ .Values.dataset.nfs.server }}
+            path: {{ .Values.dataset.nfs.path }}
+            readOnly: true
+          {{ end }}
+    - name: indexing-phase
+      inputs:
+        parameters:
+          - name: workflow
+          - name: postgre_ip
+          - name: es_ip
+          - name: cmd
+      outputs:
+        artifacts:
+          - name: 'indexing-output'
+            path: /home/user/output
+            archive:
+              none: {}
+      container:
+        image: '{{ .Values.image.name }}:{{"{{ inputs.parameters.workflow }}"}}'
+        securityContext:
+          privileged: true
+        network_mode: "host"
+        cap_add:
+          - NET_ADMIN
+        ports:
+          - name: dashboard-port
+            containerPort: 8265
+          - name: postgres-port
+            containerPort: 5432
+        command:
+          - sh
+        args:
+          - '-c'
+          - '{{"{{ inputs.parameters.cmd }}"}}'
+        env:
+          - name: http_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: https_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: MODEL_NAME
+            value: '{{"{{workflow.parameters.model_name}}"}}'
+          - name: HEAD_IP
+            value: localhost
+          - name: POSTGRES_IP
+            value: '{{"{{ inputs.parameters.postgre_ip }}"}}'
+          - name: ESDB_IP
+            value: '{{"{{inputs.parameters.es_ip}}"}}'
+        volumeMounts:
+            {{ if eq .Values.dataset.type "local" }}
+          - name: application-dir
+            mountPath: /home/user/application
+          - name: dataset-dir
+            mountPath: /home/user/dataset
+          - name: docvqa-dir
+            mountPath: /home/user/docvqa
+            {{ end }}
+            {{ if eq .Values.dataset.type "nfs" }}
+          - name: nfs-dir
+            mountPath: /home/user/application
+            subPath: {{ .Values.dataset.nfs.application_path }}
+          - name: nfs-dir
+            mountPath: /home/user/dataset
+            subPath: {{ .Values.dataset.nfs.dataset_path }}
+          - name: nfs-dir
+            mountPath: /home/user/docvqa
+            subPath: {{ .Values.dataset.nfs.docvqa_path }}
+            {{ end }}
+          - name: output-dir
+            mountPath: /home/user/output
+        imagePullPolicy: Always
+        workingDir: /home/user/application
+      volumes:
+          {{ if eq .Values.dataset.type "local" }}
+        - name: application-dir
+          hostPath:
+            path: {{ .Values.dataset.local.application_path }}
+        - name: docvqa-dir
+          hostPath:
+            path: {{ .Values.dataset.local.docvqa_path }}
+        - name: dataset-dir
+          hostPath:
+            path: {{ .Values.dataset.local.dataset_path }}
+          {{ end }}
+          {{ if eq .Values.dataset.type "nfs" }}
+        - name: nfs-dir
+          nfs:
+            server: {{ .Values.dataset.nfs.server }}
+            path: {{ .Values.dataset.nfs.path }}
+            readOnly: true
+          {{ end }}
+    - name: haystack-api-phase
+      daemon: true
+      inputs:
+        parameters:
+          - name: es_ip
+          - name: postgre_ip
+      outputs:
+        artifacts:
+          - name: 'haystack-api-output'
+            path: /home/user/output
+            archive:
+              none: {}
+      container:
+        image: "{{ .Values.image.name }}:odqa-haystack-api"
+        ports:
+          - name: haystack-port
+            containerPort: 8000
+            hostPort: 8000
+        restart: on-failure
+        command:
+          - sh
+        args:
+          - "-c"
+          - "bash /home/user/application/scripts/run_haystack_api.sh"
+        env:
+          - name: DOCUMENTSTORE_PARAMS_HOST
+            value: '{{"{{inputs.parameters.es_ip}}"}}'
+          - name: POSTGRES_IP
+            value: '{{"{{ inputs.parameters.postgre_ip }}"}}'
+          - name: DOCUMENTSTORE_PARAMS_PORT
+            value: "9200"
+          - name:  RETRIEVAL_METHOD
+            value: {{ .Values.retrieval_method }}
+          - name: PIPELINE_YAML_PATH
+            value: /home/user/haystack-pipeline.argo.yml
+          - name: QUERY_PIPELINE_NAME
+            value: query
+          - name: INDEX_NAME
+            value: dureadervis-documents
+          - name: CONCURRENT_REQUEST_PER_WORKER
+            value: "48"
+          - name: http_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: https_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: no_proxy
+            value: 'localhost,127.0.0.1,intel.com,.intel.com,goto.intel.com,.maas,10.0.0.0/8,172.16.0.0/16,192.168.0.0/16,134.134.0.0/16,.maas-internal,.svc,haystack-api'
+        volumeMounts:
+            {{ if eq .Values.dataset.type "local" }}
+          - name: application-dir
+            mountPath: /home/user/application
+            {{ end }}
+            {{ if eq .Values.dataset.type "nfs" }}
+          - name: nfs-dir
+            mountPath: /home/user/application
+            subPath: {{ .Values.dataset.nfs.application_path }}
+            {{ end }}
+          - name: output-dir
+            mountPath: /home/user/output
+      volumes:
+          {{ if eq .Values.dataset.type "local" }}
+        - name: application-dir
+          hostPath:
+            path: {{ .Values.dataset.local.application_path }}
+          {{ end }}
+          {{ if eq .Values.dataset.type "nfs" }}
+        - name: nfs-dir
+          nfs:
+            server: {{ .Values.dataset.nfs.server }}
+            path: {{ .Values.dataset.nfs.path }}
+            readOnly: true
+          {{ end }}
+    - name: ui-phase
+      inputs:
+        parameters:
+          - name: haystack_api_ip
+      container:
+        name: odqa-ui
+        image: "{{ .Values.image.name }}:odqa-haystack-ui"
+        ports:
+          - name: ui-port
+            containerPort: 8501
+            hostPort: 8501
+        restart: on-failure
+        command:
+          - sh
+        args:
+          - "-c"
+          - "/bin/bash -c 'sleep 15 && python -m streamlit run ui/webapp.py'"
+        env:
+          - name: API_ENDPOINT
+            value:  'http://{{"{{inputs.parameters.haystack_api_ip}}"}}:8000'
+          - name: DISABLE_FILE_UPLOAD
+            value: "True"
+          - name: PIPELINE_PATH
+            value: /home/user/pipelines_ensemble.haystack-pipeline.yml
+          - name: http_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: https_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: no_proxy
+            value: '{{"{{inputs.parameters.haystack_api_ip}}"}},localhost,127.0.0.1,intel.com,.intel.com,goto.intel.com,.maas,10.0.0.0/8,172.16.0.0/16,192.168.0.0/16,134.134.0.0/16,.maas-internal,.svc,haystack-api'
+        volumeMounts:
+            {{ if eq .Values.dataset.type "local" }}
+          - name: ui-config-dir
+            mountPath: /home/user/data/
+            {{ end }}
+            {{ if eq .Values.dataset.type "nfs" }}
+          - name: nfs-dir
+            mountPath: /home/user/data
+            subPath: {{ .Values.dataset.nfs.application_path }}/configs/
+            {{ end }}
+      volumes:
+          {{ if eq .Values.dataset.type "local" }}
+        - name: ui-config-dir
+          hostPath:
+            path: {{ .Values.dataset.local.application_path }}/configs/
+          {{ end }}
+          {{ if eq .Values.dataset.type "nfs" }}
+        - name: nfs-dir
+          nfs:
+            server: {{ .Values.dataset.nfs.server }}
+            path: {{ .Values.dataset.nfs.path }}
+            readOnly: true
+          {{ end }}
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: http_proxy
+        value: {{ .Values.proxy }}
+      - name: model_name
+        value: {{ .Values.model_name }}
+  volumeClaimTemplates:
+    - metadata:
+        name: output-dir
+        creationTimestamp: null
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+             storage: {{ .Values.pvc.storage }}

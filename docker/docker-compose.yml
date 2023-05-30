@@ -1,0 +1,139 @@
+# Copyright (C) 2022-2023 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+version: "3"
+services:
+  pre-process:
+    build:
+      args:
+        http_proxy: ${http_proxy}
+        https_proxy: ${https_proxy}
+        no_proxy: ${no_proxy}
+      context: ../../document-automation
+      dockerfile: docker/Dockerfile.fine-tuning
+    image: intel/ai-workflows:beta-doc-automation-fine-tuning
+    network_mode: "host"
+    privileged: true
+    command: sh -c "bash scripts/run_process_dataset.sh"
+    environment:
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - no_proxy=${no_proxy}
+    volumes:
+      - /${DATASET:-$PWD/../../dureader_vis_docvqa}:/home/user/docvqa
+      - /${SAVEPATH:-$PWD/../../output}/processed_data:/home/user/output/processed_data/
+      - ../../document-automation:/home/user/application
+    working_dir: /home/user/application
+
+  fine-tuning:
+    image: intel/ai-workflows:beta-doc-automation-fine-tuning
+    network_mode: "host"
+    privileged: true
+    command: sh -c "bash scripts/run_dpr_training.sh"
+    depends_on:
+      - pre-process
+    environment:
+      - MODEL_NAME=${MODEL_NAME}
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - no_proxy=${no_proxy}
+    volumes:
+      - /${SAVEPATH:-$PWD/../../output}/processed_data:/home/user/output/processed_data/
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}:/home/user/output/dpr_models/${MODEL_NAME}
+      - ../../document-automation:/home/user/application
+    working_dir: /home/user/application
+
+  elasticsearch:
+    image: elasticsearch:7.9.2
+    # network_mode: "host"
+    ports:
+      - "9200:9200"
+    # shm_size: 8GB
+    privileged: true
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xmx8g -Xms8g
+    volumes:
+      - ${ESDB:-$DB_DIR}/esdb:/usr/share/elasticsearch/data
+
+  postgresql:
+    image: postgres:14.1-alpine
+    network_mode: "host"
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - /${DB:-$DB_DIR}/db:/var/lib/postgresql/data
+      - /${PWD}/psql_init.sql:/docker-entrypoint-initdb.d/psql_init.sql
+
+  indexing:
+    build:
+      args:
+        http_proxy: ${http_proxy}
+        https_proxy: ${https_proxy}
+        no_proxy: ${no_proxy}
+      dockerfile: docker/Dockerfile.indexing
+      context: ../../document-automation
+    image: intel/ai-workflows:beta-doc-automation-indexing
+    privileged: true
+    network_mode: "host"
+    command: sh -c "ray start --node-ip-address=${HEAD_IP} --head --dashboard-host='0.0.0.0' --dashboard-port=8265 --disable-usage-stats && \ python src/test_pocr.py && \ bash scripts/run_distributed_indexing.sh"
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8265:8265"
+      - "5432:5432"
+    environment:
+      - HEAD_IP=localhost
+      - MODEL_NAME=${MODEL_NAME}
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - no_proxy=${no_proxy}
+    volumes:
+      - ../../document-automation:/home/user/application
+      - /${SAVEPATH:-$PWD/../../output}/index_files:/home/user/output/index_files
+      - /${DATASET:-$PWD/../../dataset}:/home/user/dataset
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/query_encoder:/home/user/output/dpr_models/${MODEL_NAME}/query_encoder
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/passage_encoder:/home/user/output/dpr_models/${MODEL_NAME}/passage_encoder
+    working_dir: /home/user/application
+
+  performance-retrieval:
+    image: intel/ai-workflows:beta-doc-automation-indexing
+    privileged: true
+    depends_on:
+      - indexing
+    network_mode: "host"
+    environment:
+      - MODEL_NAME=${MODEL_NAME}
+    command: sh -c "bash scripts/make_retrieval_eval_csv.sh && \ bash scripts/run_retrieval_eval.sh"
+    volumes:
+      - ../../document-automation:/home/user/application
+      - /${SAVEPATH:-$PWD/../../output}/index_files:/home/user/output/index_files
+      - /${SAVEPATH:-$PWD/../../output}/processed_data:/home/user/output/processed_data/
+      - /${DATASET:-$PWD/../../dureader_vis_docvqa}:/home/user/docvqa
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/query_encoder:/home/user/output/dpr_models/${MODEL_NAME}/query_encoder
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/passage_encoder:/home/user/output/dpr_models/${MODEL_NAME}/passage_encoder
+    working_dir: /home/user/application
+
+  dev:
+    command: sh -c "${WORKFLOW:-bash scripts/run_dpr_training.sh}"
+    image: intel/ai-workflows:${TAG:-beta-doc-automation-fine-tuning}
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-my_dpr_model}
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - no_proxy=${no_proxy}
+    privileged: true
+    network_mode: "host"
+    volumes:
+      - ../../document-automation:/home/user/application
+      - /${SAVEPATH:-$PWD/../../output}/index_files:/home/user/output/index_files
+      - /${SAVEPATH:-$PWD/../../output}/processed_data:/home/user/output/processed_data/
+      - /${VQA_DATASET:-$PWD/../../dureader_vis_docvqa}:/home/user/docvqa
+      - /${IMAGE_DATASET:-$PWD/../../dataset}:/home/user/dataset
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/query_encoder:/home/user/output/dpr_models/${MODEL_NAME}/query_encoder
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/passage_encoder:/home/user/output/dpr_models/${MODEL_NAME}/passage_encoder
+    working_dir: /home/user/application
+

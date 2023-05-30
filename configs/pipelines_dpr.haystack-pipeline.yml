@@ -1,0 +1,32 @@
+# To allow your IDE to autocomplete and validate your YAML pipelines, name them as <name of your choice>.haystack-pipeline.yml
+
+version: ignore
+
+components:    # define all the building-blocks for Pipeline
+  - name: DocumentStore
+    type: FAISSDocumentStore  # consider using MilvusDocumentStore or WeaviateDocumentStore for scaling to large number of documents
+    params:
+      faiss_index_path: /home/user/output/index_files/faiss-indexfile.faiss
+
+  - name: Retriever
+    type: DensePassageRetriever
+    params:
+      document_store: DocumentStore    # params can reference other components defined in the YAML
+      top_k: 10
+      query_embedding_model: "/home/user/output/dpr_models/my_dpr_model/query_encoder"
+      passage_embedding_model: "/home/user/output/dpr_models/my_dpr_model/passage_encoder"
+      max_seq_len_query: 64
+      max_seq_len_passage: 500
+      batch_size: 16
+      embed_title: False
+      use_fast_tokenizers: True
+      xlm_roberta: True
+  - name: Doc2Answers       # custom-name for the component; helpful for visualization & debugging
+    type: Docs2Answers
+pipelines:
+  - name: query    # a sample extractive-qa Pipeline
+    nodes:
+      - name: Retriever
+        inputs: [Query]
+      - name: Doc2Answers
+        inputs: [Retriever]

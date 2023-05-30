@@ -1,0 +1,27 @@
+# To allow your IDE to autocomplete and validate your YAML pipelines, name them as <name of your choice>.haystack-pipeline.yml
+
+version: ignore
+
+components:    # define all the building-blocks for Pipeline
+  - name: DocumentStore
+    type: ElasticsearchDocumentStore  # consider using MilvusDocumentStore or WeaviateDocumentStore for scaling to large number of documents
+    params:
+      host: elasticsearch
+      port: 9200
+      index: dureadervis-documents
+
+  - name: Retriever
+    type: BM25Retriever
+    params:
+      document_store: DocumentStore    # params can reference other components defined in the YAML
+      top_k: 10
+    
+  - name: Doc2Answers       # custom-name for the component; helpful for visualization & debugging
+    type: Docs2Answers
+pipelines:
+  - name: query    # a sample extractive-qa Pipeline
+    nodes:
+      - name: Retriever
+        inputs: [Query]
+      - name: Doc2Answers
+        inputs: [Retriever]
