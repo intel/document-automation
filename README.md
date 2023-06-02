@@ -143,8 +143,24 @@ echo $MODEL_NAME
 2. It is important to set up the $DB_DIR variable. Make sure you have it set up.
 3. You may want to double check your http and https proxies on your machines to make sure you can download models from external internet, more specifically, from Hugging Face model hub and from PaddleOCR.
 
-### Step 3. Download DuReader-vis dataset
+### Step 3: Download GitHub repo of this reference use case
+Make sure you are in the /work directory before you run the commands below.
+```
+# in /work directory
+git clone https://github.com/intel/document-automation.git
+git checkout beta-release
+```
+
+### Step 4. Download DuReader-vis dataset
 The Dureader-vis dataset is the largest open-source dataset for document visual retrieval (retrieval of images that contain answers to natural language queries). The entire dataset has 158k raw images. Refer to the [dataset source](https://github.com/baidu/DuReader/tree/master/DuReader-vis) for more details. </br>
+
+#### Option 1. Download entire DuReader-vis dataset with one-click script
+```
+cd work/document-automation
+bash script/run_download_dataset.sh
+```
+
+#### Option 2. Download entire or only one part of DuReader-vis dataset manually
 
 Firstly, get the raw images for the indexing pipeline. There are in total 10 parts of images, you can download all or a subset of them to try out this reference use case. </br> 
 **Note**: Indexing the entire Dureader-vis dataset will take a long time. Download only one part of the Dureader-vis dataset (for example, dureader_vis_images_part_2.tar.gz) to run through this reference use case in a shorter period of time. Each part contains about 16k images.
@@ -167,7 +183,7 @@ Make sure you are in the /work directory before you run the commands below.
 ```
 # in /work directory
 git clone https://github.com/intel/document-automation.git
-git checkout beta-v1.0
+git checkout beta-release
 ```
 
 ### Step 5: Set up Docker Compose and pull Docker images
