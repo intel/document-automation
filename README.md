@@ -109,7 +109,7 @@ Set up the directories as shown in the diagram below. Some directories will be m
 
 ![folder-structure](assets/folder-structure.png)
 
-Note: If you want to run the distributed indexing pipeline with multiple nodes, please set up the directories on a network file system (NFS) to store raw image data and repos as well as outputs from the pipelines. However, if you only want to run single-node pipelines, you can set up the directories on a local disk.
+Note: If you want to run the distributed indexing pipeline with multiple nodes, please set up the directories on a network file system (NFS) to store raw image data and repos as well as outputs from the pipelines. However, if you only want to run single-node pipelines, you can set up the directories on a local disk. For building cluster with NFS, you can refer to [this guide](https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-20-04).
 ```
 # On NFS for distributed indexing
 # or localdisk if only running single-node pipelines
