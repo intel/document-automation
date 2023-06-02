@@ -5,10 +5,10 @@ This reference use case is an end-to-end reference solution for building an AI-a
 
 ## Table of Content
 - [Solution Technical Overview](#solution-technical-overview)
-- [Highlights](#highlights)
+- [Solution Technical Details](#solution-technical-details)
 - [Validated Hardware Details](#validated-hardware-details)
 - [How It Works](#how-it-works)
-- [Getting Started](#getting-started)
+- [Get Started](#get-started)
 - [Run Single-Node DPR Fine-Tuning Pipeline with Docker Compose](#run-single-node-dpr-fine-tuning-pipeline-with-docker-compose)
 - [Run Indexing Pipeline (Single Node or Distributed)](#run-indexing-pipeline-single-node-or-distributed)
 - [Run Single-Node Deployment Pipeline](#run-single-node-deployment-pipeline)
@@ -16,8 +16,8 @@ This reference use case is an end-to-end reference solution for building an AI-a
 - [Summary and Next Steps](#summary-and-next-steps)
 - [Customize the Reference Solution to Your Own Use Case](#customize-the-reference-solution-to-your-own-use-case)
 - [For Advanced Users](#for-advanced-users)
-- [Troubleshooting](#troubleshooting)
 - [Learn More](#learn-more)
+- [Troubleshooting](#troubleshooting)
 - [Support](#support)
 
 ## Solution Technical Overview
@@ -38,7 +38,7 @@ In this reference use case, we implement and demonstrate a complete end-to-end s
 ![usecase-architecture](assets/usecase-architecture.PNG)
 
 
-## Highlights
+## Solution Technical Details
 * **Developer productivity**: The 3 pipelines in this reference use case are all containerized and allow customization through either command line arguments or config files. Developers can bring their own data and jump start development very easily. 
 * **New state-of-the-art (SOTA) retrieval recall & mean reciprocal rank (MRR) on the benchmark dataset**: better than the SOTA reported in [this paper](https://aclanthology.org/2022.findings-acl.105.pdf) on [Dureader-vis](https://github.com/baidu/DuReader/tree/master/DuReader-vis), the largest open-source document visual retrieval dataset (158k raw images in total). We demonstrated that AI-augmented ensemble retrieval method achieved higher recall and MRR than non-AI retrieval method (see the table below).
 * **Performance**: distributed capability significantly accelerates the indexing process to shorten the development time.
@@ -93,7 +93,7 @@ After the DPR encoders are fine-tuned and the document images are indexed into d
 ![retrieval-architecture](assets/retrieval-architecture.png)
 
 
-## Getting Started
+## Get Started
 ### Step 1. Set up environment variables on your machines
 Set up environment variables on the head node, and if planning to run distributed indexing pipeline, set up the environment variables on the worker nodes as well. 
 ```
@@ -233,7 +233,7 @@ In addition, for users who want to test the reference solution without going int
 ## Run Single-Node DPR Fine-Tuning Pipeline with Docker Compose
 To run the reference fine-tuning pipeline with Docker compose, please follow steps below. To customize the fine-tuning pipeline, please refer to the [Customize Fine Tuning Pipeline](#customize-fine-tuning-pipeline) section.</br> 
 
-Our reference `docker-compose.yml` is set up to take default folder directories as shown in the [Getting Started](#step-2-set-up-work-directories-on-nfs-and-local-disk-of-head-node) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands.
+Our reference `docker-compose.yml` is set up to take default folder directories as shown in the [Get Started](#step-2-set-up-work-directories-on-nfs-and-local-disk-of-head-node) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands.
 | Environment Variable Name | Default Value | Description |
 | --- | --- | --- |
 | DATASET | `$PWD/../../dureader_vis_docvqa` | Path to Dureader-vis VQA Dataset |
@@ -292,7 +292,7 @@ RAY_EMBED_CPUS_PER_ACTOR=10
 You will see print-outs on your head-node terminal as the indexing process progresses. When the indexing process is finished, you will see the embedding time and save time being printed out on the terminal. </p>
 
 ### Run single-node indexing pipeline with Docker compose
-Our reference `docker-compose.yml` is set up to work with the setup described in the [Getting Started](#getting-started) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands for the indexing pipeline.
+Our reference `docker-compose.yml` is set up to work with the setup described in the [Get Started](#getting-started) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands for the indexing pipeline.
 
 | Environment Variable Name | Default Value | Description |
 | --- | --- | --- |
@@ -478,7 +478,7 @@ flowchart RL
 
 
 ## Run Single-Node Deployment Pipeline 
-Before you run this pipeline, please make sure you have completed all the steps in the [Getting Started](#getting-started), [Run DPR Fine Tuning Pipeline](#Run-Single-Node-DPR-Fine-Tuning-Pipeline-with-docker-compose) and [Run Indexing Pipeline](#run-indexing-pipeline-single-node-or-distributed) sections.
+Before you run this pipeline, please make sure you have completed all the steps in the [Get Started](#getting-started), [Run DPR Fine Tuning Pipeline](#Run-Single-Node-DPR-Fine-Tuning-Pipeline-with-docker-compose) and [Run Indexing Pipeline](#run-indexing-pipeline-single-node-or-distributed) sections.
 
 The deployment pipeline is a no-code, config-driven, containerized pipeline. There are 4 config files:
 1. docker-compose yaml to launch the pipeline
@@ -521,7 +521,7 @@ And you should see a webpage that look like the one below.
 
 ### Deploy on a different machine
 If you want to deploy the pipeline on a different machine than the one you used for indexing, you need to do the following:
-1. Set up the directories, the repo of this use case and Docker images on the new machine as described in the [Getting Started](#getting-started) section.
+1. Set up the directories, the repo of this use case and Docker images on the new machine as described in the [Get Started](#getting-started) section.
 2. If the new machine does not have access to NFS or if you saved outputs in a local disk, then you need to copy the DPR models and FAISS index files to the new machine.
 3. Copy the Elasticsearch and PostgreSQL database files to the new machine.
 4. Modify the faiss-indexfile.json: change the IP address to the IP address of the new machine.
@@ -667,6 +667,12 @@ Then you will be taken inside the container and you can run the command below fo
 bash scripts/run_process_dataset.sh
 ```
 
+## Learn More
+To read about other use cases and workflows examples, see these resources:
+- [Intel's Open Domain Question Answering workflow](https://github.com/intel/open-domain-question-and-answer)
+- [Developer Catalog](https://developer.intel.com/aireferenceimplementations)
+- [Intel® AI Analytics Toolkit (AI Kit)](https://www.intel.com/content/www/us/en/developer/tools/oneapi/ai-analytics-toolkit.html)
+
 
 ## Troubleshooting
 1. If you got "permissions denied" error to write to the output folder in the fine-tuning pipeline, it is very likely that you do not have adequate write permissions to write to the folder on NFS. You can use `chmod` to change the permissions of the output folder. If you cannot change the permissions, you can try to set up the work directory on a local disk where you have adequate write permissions.
@@ -682,12 +688,6 @@ export https_proxy=<your https proxy>
 ```
 
 
-## Learn More
-To read about other use cases and workflows examples, see these resources:
-- [Intel's Open Domain Question Answering workflow](https://github.com/intel/open-domain-question-and-answer)
-- [Developer Catalog](https://developer.intel.com/aireferenceimplementations)
-- [Intel® AI Analytics Toolkit (AI Kit)](https://www.intel.com/content/www/us/en/developer/tools/oneapi/ai-analytics-toolkit.html)
-    
 ---
     
 ## Support
