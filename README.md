@@ -14,7 +14,6 @@ This reference use case is an end-to-end reference solution for building an AI-a
 - [Run Single-Node Deployment Pipeline](#run-single-node-deployment-pipeline)
 - [Run Using Argo Workflows on K8s Using Helm](#run-using-argo-workflows-on-k8s-using-helm)
 - [Summary and Next Steps](#summary-and-next-steps)
-- [Customize the Reference Solution to Your Own Use Case](#customize-the-reference-solution-to-your-own-use-case)
 - [For Advanced Users](#for-advanced-users)
 - [Learn More](#learn-more)
 - [Troubleshooting](#troubleshooting)
@@ -565,12 +564,12 @@ You can open up a browser (Chrome recommended) and type in the following address
 
 
 ## Summary and Next Steps
-You have run through the three pipelines of this reference use case that builds and deploys an AI-enhanced multi-modal retrieval solution for Dureader-vis images, with which you can use natural language queries to retrieve images. The three pipelines are 1) DPR fine tuning pipeline, 2) image-to-document indexing pipeline, 3) deployment pipeline. </p>
+You have run through the three pipelines of this reference use case that builds and deploys an AI-enhanced multi-modal retrieval solution for Dureader-vis images, with which you can use natural language queries to retrieve images. The four pipelines are 1) data preprocessing pipeline, 2) DPR fine tuning pipeline, 3) image-to-document indexing pipeline, 4) deployment pipeline. </p>
 Next you can customize the reference solution to your own use case by following the customization sections below.
 
-## Customize the Reference Solution to Your Own Use Case
-### Customize Fine Tuning Pipeline
-#### How to customize data preprocessing
+### How to customize this workflow/use case
+
+#### Customize data preprocessing pipeline
 Haystack APIs are used for fine tuning DPR models, which require a specific format for training data. The data processing script in our reference fine-tuning pipeline is tailored to the data format of the Dureader-vis dataset. Please refer to this [haystack tutorial](https://haystack.deepset.ai/tutorials/09_dpr_training) on how to custom datasets for DPR fine tuning with haystack.</p>
 if you just want to try different passage lengths/overlaps with Dureader-vis dataset, you can change the following params in the ```scripts/run_process_dataset.sh```:
 ```
@@ -579,7 +578,7 @@ OVERLAP=10
 MINCHARS=5
 ```
 
-#### How to customize DPR fine tuning
+#### Customize DPR fine tuning pipeline
 Once you have processed your data according to the format required by haystack APIs, you can use our fine-tuning script implemented in this reference use case. You can customize the training hyperparameters listed [here](assets/Customization.md#customize-dpr-fine-tuning-pipeline). To save your fine-tuned model with a customized name, you can change the ```MODEL_NAME``` variable by ```export MODEL_NAME=<your model name>```. </p>
 **Note**: you need to change the model paths in the deployment pipeline yaml accordingly if you changed the ```MODEL_NAME``` variable.
 
@@ -597,7 +596,7 @@ You can use command line arguments in the ```scripts/run_distributed_indexing.sh
 
 Advanced users can write their own methods and incorporate more customized functionality into ```src/gen-sods-doc-image-ray.py``` for more flexibility. </br> 
 
-### Customize the deployment pipeline
+### Customize deployment pipeline
 This pipeline can be customized through config files. There are 4 config files:
 1. docker-compose yaml to launch the pipeline
 2. env config file that specifies environment variables for docker-compose
