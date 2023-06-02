@@ -147,7 +147,6 @@ Make sure you are in the /work directory before you run the commands below.
 ```
 # in /work directory
 git clone https://github.com/intel/document-automation.git
-git checkout beta-release
 ```
 
 ### Step 4. Download DuReader-vis dataset
@@ -175,14 +174,6 @@ cd ../ # come back to the /work directory
 # download dureader_vis_docvqa.tar.gz to /work
 wget https://dataset-bj.cdn.bcebos.com/qianyan/dureader_vis_docvqa.tar.gz
 tar -xzf dureader_vis_docvqa.tar.gz
-```
-
-### Step 4: Download GitHub repo of this reference use case
-Make sure you are in the /work directory before you run the commands below.
-```
-# in /work directory
-git clone https://github.com/intel/document-automation.git
-git checkout beta-release
 ```
 
 ### Step 5: Set up Docker Compose and pull Docker images
