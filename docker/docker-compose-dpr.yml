@@ -51,7 +51,7 @@ services:
       - DEFAULT_QUESTION_AT_STARTUP
       - DEFAULT_DOCS_FROM_RETRIEVER
       - DEFAULT_NUMBER_OF_ANSWERS
-      - http_proxy=$HTTP_PROXY
-      - https_proxy=$HTTPS_PROXY
+      - http_proxy=
+      - https_proxy=
       - no_proxy=$NO_PROXY
     command: "/bin/bash -c 'sleep 15 && python -m streamlit run ui/webapp.py'"
