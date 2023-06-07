@@ -4,9 +4,12 @@
 DATASET_DIR=$DB_DIR/../../dataset
 
 # download dureader dataset
-conda create -n dureader_downloader python=3.9
+yes | conda create --force -n dureader_downloader python=3.9
 conda activate dureader_downloader
 echo "Download dataset, this may take a while...."
+python -m pip install dataset-librarian
+[[ -d ${DATASET_DIR} ]] || mkdir -p ${DATASET_DIR}
+rm -rf ${DATASET_DIR}/*
 python src/download_dataset.py --dataset_dir ${DATASET_DIR}
 conda deactivate
 

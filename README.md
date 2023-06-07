@@ -154,8 +154,9 @@ The Dureader-vis dataset is the largest open-source dataset for document visual 
 
 #### Option 1. Download entire DuReader-vis dataset with one-click script
 ```
+# Note: Make sure Anaconda or Miniconda already installed
 cd work/document-automation
-bash script/run_download_dataset.sh
+. scripts/run_download_dataset.sh
 ```
 
 #### Option 2. Download entire or only one part of DuReader-vis dataset manually
