@@ -531,6 +531,7 @@ chmod 700 get_helm.sh && \
 ### 2. Setting up K8s
 - Install [Argo Workflows](https://argoproj.github.io/argo-workflows/quick-start/) and [Argo CLI](https://github.com/argoproj/argo-workflows/releases)
 - Configure your [Artifact Repository](https://argoproj.github.io/argo-workflows/configure-artifact-repository/)
+- Ensure that your dataset and config files are present in your chosen artifact repository.
 ### 3. Install Workflow Template
 Ensure that you have reviewed the [Hardware Requirements](##hardware-requirements) and each of your nodes has sufficient memory for the workflow. Follow [Helm Chart README](chart/README.md) to properly configure the [values.yaml](chart/values.yaml) file.
 ```bash

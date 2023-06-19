@@ -14,7 +14,7 @@ spec:
                 - name: workflow
                   value: beta-doc-automation-fine-tuning
                 - name: cmd
-                  value: 'bash scripts/run_process_dataset.sh'
+                  value: 'bash scripts/run_process_dataset_argo.sh'
           - name: fine-tuning
             template: fine-tuning-phase
             arguments:
@@ -71,6 +71,8 @@ spec:
                   value: "{{ `{{tasks.elasticsearch-db.ip}}` }}"
                 - name: postgre_ip
                   value: "{{ `{{tasks.postgresql-db.ip}}` }}"
+                - name: workflow
+                  value: beta-doc-automation-indexing
             dependencies:
               - performance-retrieval
           - name: ui
@@ -111,15 +113,10 @@ spec:
             value: '{{"{{workflow.parameters.model_name}}"}}'
         volumeMounts:
             {{ if eq .Values.dataset.type "local" }}
-          - name: application-dir
-            mountPath: /home/user/application
           - name: docvqa-dir
             mountPath: /home/user/docvqa
             {{ end }}
             {{ if eq .Values.dataset.type "nfs" }}
-          - name: nfs-dir
-            mountPath: /home/user/application
-            subPath: {{ .Values.dataset.nfs.application_path }}
           - name: nfs-dir
             mountPath: /home/user/docvqa
             subPath: {{ .Values.dataset.nfs.docvqa_path }}
@@ -130,9 +127,6 @@ spec:
         workingDir: /home/user/application
       volumes:
           {{ if eq .Values.dataset.type "local" }}
-        - name: application-dir
-          hostPath:
-            path: {{ .Values.dataset.local.application_path }}
         - name: docvqa-dir
           hostPath:
             path: {{ .Values.dataset.local.docvqa_path }}
@@ -201,12 +195,10 @@ spec:
             containerPort: 5432
             hostPort: 5432
         command:
-          - docker-entrypoint.sh
+          - sh
         args:
           - '-c'
-          - 'max_connections=200'
-          - '-c'
-          - 'listen_addresses=*'
+          - 'echo "CREATE DATABASE haystack;" > /docker-entrypoint-initdb.d/psql_init.sql && docker-entrypoint.sh -c max_connections=200 -c listen_addresses=*'
         env:
           - name: POSTGRES_USER
             value: postgres
@@ -216,32 +208,12 @@ spec:
             {{ if eq .Values.dataset.type "local" }}
           - name: postgres-dir
             mountPath: /var/lib/postgresql/data/
-          - name: psql-init-sql-dir
-            mountPath: /docker-entrypoint-initdb.d/psql_init.sql
-            {{ end }}
-            {{ if eq .Values.dataset.type "nfs" }}
-          - name: nfs-dir
-            mountPath: /docker-entrypoint-initdb.d/psql_init.sql
-            subPath: {{ .Values.dataset.nfs.application_path }}/docker/psql_init.sql
             {{ end }}
       volumes:
           {{ if eq .Values.dataset.type "local" }}
         - name: postgres-dir
           hostPath:
             path: {{ .Values.dataset.local.postgre_data_path }}
-        - name: psql-init-sql-dir
-          hostPath:
-            path: {{ .Values.dataset.local.application_path }}/docker/psql_init.sql
-        - name: pg-hba-conf
-          hostPath:
-            path: {{ .Values.dataset.local.application_path }}/docker/pg_hba.conf
-          {{ end }}
-          {{ if eq .Values.dataset.type "nfs" }}
-        - name: nfs-dir
-          nfs:
-            server: {{ .Values.dataset.nfs.server }}
-            path: {{ .Values.dataset.nfs.path }}
-            readOnly: true
           {{ end }}
     - name: indexing-phase
       inputs:
@@ -288,17 +260,12 @@ spec:
             value: '{{"{{inputs.parameters.es_ip}}"}}'
         volumeMounts:
             {{ if eq .Values.dataset.type "local" }}
-          - name: application-dir
-            mountPath: /home/user/application
           - name: dataset-dir
             mountPath: /home/user/dataset
           - name: docvqa-dir
             mountPath: /home/user/docvqa
             {{ end }}
             {{ if eq .Values.dataset.type "nfs" }}
-          - name: nfs-dir
-            mountPath: /home/user/application
-            subPath: {{ .Values.dataset.nfs.application_path }}
           - name: nfs-dir
             mountPath: /home/user/dataset
             subPath: {{ .Values.dataset.nfs.dataset_path }}
@@ -312,9 +279,6 @@ spec:
         workingDir: /home/user/application
       volumes:
           {{ if eq .Values.dataset.type "local" }}
-        - name: application-dir
-          hostPath:
-            path: {{ .Values.dataset.local.application_path }}
         - name: docvqa-dir
           hostPath:
             path: {{ .Values.dataset.local.docvqa_path }}
@@ -335,6 +299,7 @@ spec:
         parameters:
           - name: es_ip
           - name: postgre_ip
+          - name: workflow
       outputs:
         artifacts:
           - name: 'haystack-api-output'
@@ -342,7 +307,7 @@ spec:
             archive:
               none: {}
       container:
-        image: "{{ .Values.image.name }}:odqa-haystack-api"
+        image: '{{ .Values.image.name }}:{{"{{ inputs.parameters.workflow }}"}}'
         ports:
           - name: haystack-port
             containerPort: 8000
@@ -377,24 +342,24 @@ spec:
           - name: no_proxy
             value: 'localhost,127.0.0.1,intel.com,.intel.com,goto.intel.com,.maas,10.0.0.0/8,172.16.0.0/16,192.168.0.0/16,134.134.0.0/16,.maas-internal,.svc,haystack-api'
         volumeMounts:
-            {{ if eq .Values.dataset.type "local" }}
-          - name: application-dir
-            mountPath: /home/user/application
+            {{ if and (eq .Values.dataset.type "local") .Values.dataset.local.config_path }}
+          - name: config-dir
+            mountPath: /home/user/application/configs
             {{ end }}
-            {{ if eq .Values.dataset.type "nfs" }}
+            {{ if and (eq .Values.dataset.type "nfs") .Values.dataset.nfs.config_path }}
           - name: nfs-dir
-            mountPath: /home/user/application
-            subPath: {{ .Values.dataset.nfs.application_path }}
+            mountPath: /home/user/application/configs
+            subPath: {{ .Values.dataset.nfs.config_path }}
             {{ end }}
           - name: output-dir
             mountPath: /home/user/output
       volumes:
-          {{ if eq .Values.dataset.type "local" }}
-        - name: application-dir
+          {{ if and (eq .Values.dataset.type "local") .Values.local.config_path }}
+        - name: config-dir
           hostPath:
-            path: {{ .Values.dataset.local.application_path }}
+            path: {{ .Values.dataset.local.config_path }}
           {{ end }}
-          {{ if eq .Values.dataset.type "nfs" }}
+          {{ if and (eq .Values.dataset.type "nfs") .Values.dataset.nfs.config_path }}
         - name: nfs-dir
           nfs:
             server: {{ .Values.dataset.nfs.server }}
@@ -424,7 +389,7 @@ spec:
           - name: DISABLE_FILE_UPLOAD
             value: "True"
           - name: PIPELINE_PATH
-            value: /home/user/pipelines_ensemble.haystack-pipeline.yml
+            value: '/home/user/data/pipelines_{{"{{workflow.parameters.retrieval_method}}"}}.haystack-pipeline.yml'
           - name: http_proxy
             value: '{{"{{workflow.parameters.http_proxy}}"}}'
           - name: https_proxy
@@ -432,22 +397,22 @@ spec:
           - name: no_proxy
             value: '{{"{{inputs.parameters.haystack_api_ip}}"}},localhost,127.0.0.1,intel.com,.intel.com,goto.intel.com,.maas,10.0.0.0/8,172.16.0.0/16,192.168.0.0/16,134.134.0.0/16,.maas-internal,.svc,haystack-api'
         volumeMounts:
-            {{ if eq .Values.dataset.type "local" }}
-          - name: ui-config-dir
+            {{ if and (eq .Values.dataset.type "local") .Values.dataset.local.config_path }}
+          - name: config-dir
             mountPath: /home/user/data/
             {{ end }}
-            {{ if eq .Values.dataset.type "nfs" }}
+            {{ if and (eq .Values.dataset.type "nfs") .Values.dataset.nfs.config_path }}
           - name: nfs-dir
-            mountPath: /home/user/data
-            subPath: {{ .Values.dataset.nfs.application_path }}/configs/
+            mountPath: /home/user/data/
+            subPath: {{ .Values.dataset.nfs.config_path }}
             {{ end }}
       volumes:
-          {{ if eq .Values.dataset.type "local" }}
-        - name: ui-config-dir
+          {{ if and (eq .Values.dataset.type "local") .Values.dataset.local.config_path }}
+        - name: config-dir
           hostPath:
-            path: {{ .Values.dataset.local.application_path }}/configs/
+            path: {{ .Values.dataset.local.config_path }}
           {{ end }}
-          {{ if eq .Values.dataset.type "nfs" }}
+          {{ if and (eq .Values.dataset.type "nfs") .Values.dataset.nfs.config_path }}
         - name: nfs-dir
           nfs:
             server: {{ .Values.dataset.nfs.server }}
@@ -461,6 +426,8 @@ spec:
         value: {{ .Values.proxy }}
       - name: model_name
         value: {{ .Values.model_name }}
+      - name: retrieval_method
+        value: {{ .Values.retrieval_method }}
   volumeClaimTemplates:
     - metadata:
         name: output-dir
