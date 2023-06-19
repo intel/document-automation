@@ -1,23 +1,8 @@
 # Document Automation Reference Use Case
 
 ## Introduction
-This reference use case is an end-to-end reference solution for building an AI-augmented multi-modal semantic search system for document images (for example, scanned documents). This solution can help enterprises gain more insights from their document archives more quickly and easily using natural language queries. 
 
-## Table of Content
-- [Solution Technical Overview](#solution-technical-overview)
-- [Solution Technical Details](#solution-technical-details)
-- [Validated Hardware Details](#validated-hardware-details)
-- [How It Works](#how-it-works)
-- [Get Started](#get-started)
-- [Run Single-Node DPR Fine-Tuning Pipeline with Docker Compose](#run-single-node-dpr-fine-tuning-pipeline-with-docker-compose)
-- [Run Indexing Pipeline (Single Node or Distributed)](#run-indexing-pipeline-single-node-or-distributed)
-- [Run Single-Node Deployment Pipeline](#run-single-node-deployment-pipeline)
-- [Run Using Argo Workflows on K8s Using Helm](#run-using-argo-workflows-on-k8s-using-helm)
-- [Summary and Next Steps](#summary-and-next-steps)
-- [For Advanced Users](#for-advanced-users)
-- [Learn More](#learn-more)
-- [Troubleshooting](#troubleshooting)
-- [Support](#support)
+This reference use case is an end-to-end reference solution for building an AI-augmented multi-modal semantic search system for document images (for example, scanned documents). This solution can help enterprises gain more insights from their document archives more quickly and easily using natural language queries. 
 
 ## Solution Technical Overview
 Enterprises are accumulating a vast quantity of documents, a large portion of which is in image formats such scanned documents. These documents contain a large amount of valuable information, but it is a challenge for enterprises to index, search and gain insights from the document images due to the reasons below:
@@ -36,7 +21,6 @@ In this reference use case, we implement and demonstrate a complete end-to-end s
 
 ![usecase-architecture](assets/usecase-architecture.PNG)
 
-
 ## Solution Technical Details
 * **Developer productivity**: The 3 pipelines in this reference use case are all containerized and allow customization through either command line arguments or config files. Developers can bring their own data and jump start development very easily. 
 * **New state-of-the-art (SOTA) retrieval recall & mean reciprocal rank (MRR) on the benchmark dataset**: better than the SOTA reported in [this paper](https://aclanthology.org/2022.findings-acl.105.pdf) on [Dureader-vis](https://github.com/baidu/DuReader/tree/master/DuReader-vis), the largest open-source document visual retrieval dataset (158k raw images in total). We demonstrated that AI-augmented ensemble retrieval method achieved higher recall and MRR than non-AI retrieval method (see the table below).
@@ -44,14 +28,13 @@ In this reference use case, we implement and demonstrate a complete end-to-end s
 * **Deployment made easy**: using two Docker containers from [Intel's open domain question answering workflow](https://github.com/intel/open-domain-question-and-answer) and two other open-source containers, you can easily deploy the retrieval solution by customizing the config files and running the launch script provided in this reference use case.
 * **Multilingual customizable models**: you can use our pipelines to develop and deploy your own models in many different languages.
 
-### Retrieval performance of the dev set queries on the entire indexed Dureader-vis dataset
+### Retrieval Performance of the Dev Set Queries on the Entire Indexed Dureader-vis Dataset
 | Method | Top-5 Recall | Top-5 MRR | Top-10 Recall | Top-10 MRR |
 |------|------------|---------|-------------|----------|
 | BM25 only (ours) | 0.7665 | 0.6310 | 0.8333 | 0.6402 |
 | DPR only (ours) | 0.6362 | 0.4997 | 0.7097 | 0.5094 |
 | **Ensemble (ours)** | **0.7983** | **0.6715** | **0.8452** | **0.6780** |
 | SOTA reported by Baidu | 0.7633 | did not report | 0.8180 | 0.6508 |
-
 
 ## Validated Hardware Details
 Please note that indexing of the entire Dureader-vis dataset can take days depending on the type and the number of CPU nodes that you are using for the indexing pipeline. This reference use case provides a multi-node distributed indexing pipeline that accelerates the indexing process. It is recommended to use at least 2 nodes with the hardware specifications listed in the table below. A network file system (NFS) is needed for the distributed indexing pipeline. </p>
@@ -64,17 +47,16 @@ To try out this reference use case in a shorter time frame, you can download onl
 |Memory|larger is better, recommend >376 GB|
 |Storage|>250 GB|
 
-
 ## How it Works
-We present some technical background on the three pipelines of this use case. We recommend running our reference solution first and then customizing the reference solution to your own use case by following the [Customize the Reference Solution to Your Own Use Case](#customize-the-reference-solution-to-your-own-use-case) section.
-### Dense passage retriever (DPR) fine tuning
+We present some technical background on the three pipelines of this use case. We recommend running our reference solution first and then customizing the reference solution to your own use case by following the [How to customize this reference kit](#how-to-customize-this-reference-kit) section.
+### Dense Passage Retriever (DPR) Fine Tuning
 Dense passage retriever is a dual-encoder retriever based on transformers. Please refer to [the original DPR paper](https://arxiv.org/abs/2004.04906) for in-depth description of DPR model architecture and the fine-tuning algorithms. Briefly, DPR consists of two encoders, one for the query and one for the documents. DPR encoders can be fine tuned with customer datasets using the in-batch negative method where the answer documents of the other queries in the mini-batch serve as the negative samples. Hard negatives can be added to further improve the retrieval performance (recall and MRR). </p>
 
 In this reference use case, we used a pretrained cross-lingual language model open-sourced on Huggingface model hub, namely, the [infoxlm-base model pretrained by Microsoft](https://aclanthology.org/2021.naacl-main.280/), as the starting point for both the query encoder and document encoder. We fine tuned the encoders with in-batch negatives. However, we did not include hard negatives in our fine-tuning pipeline. This can be future work in our later releases. We showcase that ensembling our fine-tuned DPR with BM25 retriever (a type of widely used non-AI retriever) can improve the retrieval recall and MRR compared to BM25 only. </p>
 
 The stock haystack library only supports BERT based DPR models, we have made modifications to the haystack APIs to allow any encoder architecture (e.g., RoBERTa, xlm-RoBERTa, etc.) that you can load via the from_pretrained method of Hugging Face transformers library. By using our containers, you can fine tune a diverse array of custom DPR models by setting ```xlm_roberta``` flag to true when initiating ```DensePassageRetriever``` object. (Note: although the flag is called "xlm_roberta", it supports any model architecture that can be loaded with from_pretrained method.)
 
-### Image-to-document indexing
+### Image-to-Document Indexing
 In order to retrieve documents in response to queries, we first need to index the documents where the raw document images are converted into text passages and stored into databases with indices. In this reference use case, we demonstrate that use an ensemble retrieval method (BM25 + DPR) improves the retrieval recall and MRR over the BM25 only and DPR only retrieval methods. In order to condcut the ensemble retrieval, we need to build two databases: 1) an ElasticSearch database for BM25 retrieval, and 2) a PostgreSQL database plus a FAISS index file for DPR retrieval. </p>
 
 The architecture of the indexing pipeline is shown in the diagram below. There are 3 tasks in the indexing pipeline:
@@ -91,9 +73,9 @@ After the DPR encoders are fine-tuned and the document images are indexed into d
 
 ![retrieval-architecture](assets/retrieval-architecture.png)
 
-
 ## Get Started
-### Step 1. Set up environment variables on your machines
+
+### Set Up Environment Variables on Your Machines
 Set up environment variables on the head node, and if planning to run distributed indexing pipeline, set up the environment variables on the worker nodes as well. 
 ```
 export HEAD_IP=<your head node ip address>
@@ -104,7 +86,7 @@ Append "haystack-api" to $NO_PROXY:
 export NO_PROXY=<your original NO_PROXY>,haystack-api
 ```
 
-### Step 2. Set up work directories on NFS and local disk of head node
+### Set Up Work Directories on NFS and Local Disk of Head Node
 Set up the directories as shown in the diagram below. Some directories will be mounted to containers when you run the pipelines later on. You don't need to worry about mounting the directories when running our reference solution as mounting will be done automatically by our scripts. We want to show the mounting architecture here to make it clear and easy for you to customize the pipelines later on. 
 
 ![folder-structure](assets/folder-structure.png)
@@ -142,24 +124,25 @@ echo $MODEL_NAME
 2. It is important to set up the $DB_DIR variable. Make sure you have it set up.
 3. You may want to double check your http and https proxies on your machines to make sure you can download models from external internet, more specifically, from Hugging Face model hub and from PaddleOCR.
 
-### Step 3: Download GitHub repo of this reference use case
+### Download the Workflow Repository
 Make sure you are in the /work directory before you run the commands below.
 ```
 # in /work directory
 git clone https://github.com/intel/document-automation.git
 ```
 
-### Step 4. Download DuReader-vis dataset
+### Download the Datasets
 The Dureader-vis dataset is the largest open-source dataset for document visual retrieval (retrieval of images that contain answers to natural language queries). The entire dataset has 158k raw images. Refer to the [dataset source](https://github.com/baidu/DuReader/tree/master/DuReader-vis) for more details. </br>
 
-#### Option 1. Download entire DuReader-vis dataset with one-click script
+
+#### Option 1. Download Entire DuReader-vis Dataset with One-Click Script
 ```
 # Note: Make sure Anaconda or Miniconda already installed
 cd work/document-automation
 . scripts/run_download_dataset.sh
 ```
 
-#### Option 2. Download entire or only one part of DuReader-vis dataset manually
+#### Option 2. Download Entire or Only One Part of DuReader-vis Dataset Manually
 
 Firstly, get the raw images for the indexing pipeline. There are in total 10 parts of images, you can download all or a subset of them to try out this reference use case. </br> 
 **Note**: Indexing the entire Dureader-vis dataset will take a long time. Download only one part of the Dureader-vis dataset (for example, dureader_vis_images_part_2.tar.gz) to run through this reference use case in a shorter period of time. Each part contains about 16k images.
@@ -177,15 +160,39 @@ wget https://dataset-bj.cdn.bcebos.com/qianyan/dureader_vis_docvqa.tar.gz
 tar -xzf dureader_vis_docvqa.tar.gz
 ```
 
-### Step 5: Set up Docker Compose and pull Docker images
-**Note**: You need to do this step on head nodes and **all** worker nodes if you plan to run multi-node distributed indexing.
+## Supported Runtime Environment
 
-#### 5.1. Set Up Docker Engine and Docker Compose
-You'll need to install Docker Engine on your development system. Note that while **Docker Engine** is free to use, **Docker Desktop** may require you to purchase a license. See the [Docker Engine Server installation instructions](https://docs.docker.com/engine/install/#server) for details.
+For data scientists and developers, we provide the following:
 
+* Single-node step-by-step preprocessing, fine-tuning, indexing and deployment pipelines with Docker compose,
+* Containerized [multi-node distributed indexing pipeline](#run-indexing-pipeline-with-multi-node) to accelerate the indexing process.
 
-To build and run this workload inside a Docker Container, ensure you have Docker Compose installed on your machine. If you don't have this tool installed, consult the official [Docker Compose installation documentation](https://docs.docker.com/compose/install/linux/#install-the-plugin-manually).
+For MLOps engineers, we provide template to run this use case with [Argo](#run-using-argo). For advanced users, we will explain how you can [bring your own scripts](#bring-your-own-scripts) and [run containers interactively](#run-docker-container-in-an-interactive-environment). </br>
 
+In addition, for users who want to test the reference solution without going into a lot of technical details, we provide [instructions](#run-single-node-fine-tuning-and-indexing-pipelines-with-one-line-of-docker-compose) to execute the single-node fine-tuning and indexing with pipelines with a single docker compose command. 
+
+You can run the reference pipelines using the following environments:
+* Docker
+* Argo
+
+## Run Using Docker
+
+### Set Up Docker Engine
+You'll need to install Docker Engine on your development system.
+Note that while **Docker Engine** is free to use, **Docker Desktop** may require
+you to purchase a license.  See the [Docker Engine Server installation
+instructions](https://docs.docker.com/engine/install/#server) for details.
+
+If the Docker image is run on a cloud service, mention they may also need
+credentials to perform training and inference related operations (such as these
+for Azure):
+- [Set up the Azure Machine Learning Account](https://azure.microsoft.com/en-us/free/machine-learning)
+- [Configure the Azure credentials using the Command-Line Interface](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
+- [Compute targets in Azure Machine Learning](https://learn.microsoft.com/en-us/azure/machine-learning/concept-compute-target)
+- [Virtual Machine Products Available in Your Region](https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=virtual-machines&regions=us-east)
+
+### Setup Docker Compose
+Ensure you have Docker Compose installed on your machine. If you don't have this tool installed, consult the official [Docker Compose installation documentation](https://docs.docker.com/compose/install/linux/#install-the-plugin-manually).
 
 ```bash
 DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
@@ -195,44 +202,23 @@ chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
 docker compose version
 ```
 
-#### 5.2. Set Up Docker Images
-Build or pull the provided Docker images. The build command generates the docker images for fine-tuning and indexing processes. 
+### Set Up Docker Image
+ Build or pull the provided docker image.
 
 ```bash
 cd document-automation
 cd docker
 docker compose build 
 ```
-OR
+OR 
+
 ```bash
 docker pull intel/ai-workflows:beta-doc-automation-fine-tuning
 docker pull intel/ai-workflows:beta-doc-automation-indexing
 ```
-### Ways to run this reference use case
 
-For data scientists and developers, we provide the following:
-
-* Single-node step-by-step fine-tuning, indexing and deployment pipelines with Docker compose,
-* Containerized [multi-node distributed indexing pipeline](#run-multi-node-distributed-indexing-pipeline) to accelerate the indexing process.
-
-For MLOps engineers, we provide template to run this use case with [Argo](#run-using-argo-workflows-on-k8s-using-helm). For advanced users, we will explain how you can [bring your own scripts](#bring-your-own-scripts) and [run containers interactively](#run-docker-container-in-an-interactive-environment). </br>
-
-In addition, for users who want to test the reference solution without going into a lot of technical details, we provide [instructions](#run-single-node-fine-tuning-and-indexing-pipelines-with-one-line-of-docker-compose) to execute the single-node fine-tuning and indexing with pipelines with a single docker compose command. 
-
-
-
-## Run Single-Node DPR Fine-Tuning Pipeline with Docker Compose
-To run the reference fine-tuning pipeline with Docker compose, please follow steps below. To customize the fine-tuning pipeline, please refer to the [Customize Fine Tuning Pipeline](#customize-fine-tuning-pipeline) section.</br> 
-
-Our reference `docker-compose.yml` is set up to take default folder directories as shown in the [Get Started](#step-2-set-up-work-directories-on-nfs-and-local-disk-of-head-node) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands.
-| Environment Variable Name | Default Value | Description |
-| --- | --- | --- |
-| DATASET | `$PWD/../../dureader_vis_docvqa` | Path to Dureader-vis VQA Dataset |
-| MODEL_NAME | `my_dpr_model` | Name of the model folder |
-| SAVEPATH | `$PWD/../../output` | Path to processed data and fine-tuned DPR models |
-
-### Step 1. Preprocess the dataset 
-We preprocess the `docvqa_train.json` and `docvqa_dev.json` files from Dureader-vis that contain questions, answers and document text extracted by PaddleOCR. Refer to the [dataset source](https://github.com/baidu/DuReader/tree/master/DuReader-vis) for more details on the json files. The preprocessing is needed to satisfy the requirements of haytack APIs for DPR training. The preprocessing will split the document text into passages with max_length=500, overlap=10, min_length=5 by default, and identify the positive passage for each question. Please refer to [this section](#how-to-customize-data-preprocessing) on how to customize this step. </p>
+### Run Single-Node Preprocessing Pipeline 
+We preprocess the `docvqa_train.json` and `docvqa_dev.json` files from Dureader-vis that contain questions, answers and document text extracted by PaddleOCR. Refer to the [dataset source](https://github.com/baidu/DuReader/tree/master/DuReader-vis) for more details on the json files. The preprocessing is needed to satisfy the requirements of haytack APIs for DPR training. The preprocessing will split the document text into passages with max_length=500, overlap=10, min_length=5 by default, and identify the positive passage for each question. Please refer to [this section](#customize-data-preprocessing-pipeline) on how to customize this step. </p>
 
 You will see progress bars showing the dataset processing status when you run the commands below. 
 ```bash
@@ -241,15 +227,25 @@ cd docker
 docker compose run pre-process
 ```
 
-### Step 2. Run Single-Node DPR Fine-Tuning
+### Run Single-Node DPR Fine-Tuning Pipeline
+
+To run the reference fine-tuning pipeline with Docker compose, please follow steps below. To customize the fine-tuning pipeline, please refer to the [Customize Fine Tuning Pipeline](#customize-DPR-fine-tuning-pipeline) section.</br> 
+
+Our reference `docker-compose.yml` is set up to take default folder directories as shown in the [Get Started](#get-started) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands.
+| Environment Variable Name | Default Value | Description |
+| --- | --- | --- |
+| DATASET | `$PWD/../../dureader_vis_docvqa` | Path to Dureader-vis VQA Dataset |
+| MODEL_NAME | `my_dpr_model` | Name of the model folder |
+| SAVEPATH | `$PWD/../../output` | Path to processed data and fine-tuned DPR models |
+
 Run the fine-tuning pipeline using Docker compose as shown below. You will see progress bars showing the training status. The default hyperparameters used for fine tuning are listed [here](assets/Customization.md#customize-dpr-fine-tuning-pipeline).</br>
 
 ```bash
 docker compose run fine-tuning
 ```
 
-## Run Indexing Pipeline (Single-Node or Distributed)
-To run single-node indexing, go to [this section](#run-single-node-indexing-pipeline-with-docker-compose). To run multi-node distributed indexing, go to [this section](#run-multi-node-distributed-indexing-pipeline). </br>
+### Run Indexing Pipeline
+To run single-node indexing, go to [this section](#run-indexing-pipeline-with-single-node). To run multi-node distributed indexing, go to [this section](#run-indexing-pipeline-with-multi-node). </br>
 We provide 3 options for indexing: `bm25` , `dpr` , `all`. Our reference use case uses the `all` option, which will index the document images for both BM25 and DPR retrieval. </br>
 
 The default methods/models/parameters used for indexing are shown in table below. To customize the indexing pipeline, please refer to the [Customize Indexing Pipeline](#customize-indexing-pipeline) section.
@@ -282,8 +278,8 @@ RAY_EMBED_CPUS_PER_ACTOR=10
 
 You will see print-outs on your head-node terminal as the indexing process progresses. When the indexing process is finished, you will see the embedding time and save time being printed out on the terminal. </p>
 
-### Run single-node indexing pipeline with Docker compose
-Our reference `docker-compose.yml` is set up to work with the setup described in the [Get Started](#getting-started) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands for the indexing pipeline.
+### Run Indexing Pipeline with Single Node
+Our reference `docker-compose.yml` is set up to work with the setup described in the [Get Started](#get-started) section. If you want to set up your directories in a different way, you can export environment varibles listed in the table below, before you run docker compose commands for the indexing pipeline.
 
 | Environment Variable Name | Default Value | Description |
 | --- | --- | --- |
@@ -292,7 +288,7 @@ Our reference `docker-compose.yml` is set up to work with the setup described in
 | SAVEPATH | `$PWD/../../output` | Path to index files, fine-tuned DPR models |
 
 
-#### Step 1. Run the database containers
+#### Step 1. Run the Database Containers
 Run the elasticsearch and postgresql database containers using Docker compose as follows 
 ```bash
 # if not in the docker folder,
@@ -323,12 +319,12 @@ flowchart RL
   class P0,P1 ports
 ```
 
-#### Step 2. Run single-node indexing pipeline 
+#### Step 2. Run Single-Node Indexing Pipeline 
 ```bash
 docker compose run indexing
 ```
 
-#### Step 3. Evaluate retrieval performance with Docker compose
+#### Step 3. Evaluate Retrieval Performance with Docker Compose
 
 You can evaluate the performance (Top-K recall and MRR) of 3 different retrieval methods: 
 1. BM25 only
@@ -345,15 +341,15 @@ docker compose run performance-retrieval
 
 If you did not get the results listed in [the table above](#retrieval-performance-of-the-dev-set-queries-on-the-entire-indexed-dureader-vis-dataset), please refer to the [Troubleshooting](#troubleshooting) section.
 
-#### Step 4. Stop and remove all the services
+#### Step 4. Stop and Remove All the Services
 Use the following command to stop and remove all the services at any time. 
 ```bash
 docker compose down
 ```
 
 
-### Run multi-node distributed indexing pipeline
-#### Step 1. Start containers on head node and worker nodes
+### Run Indexing Pipeline with Multi Node
+#### Step 1. Start Containers on Head Node and Worker Nodes
 1. Stop and remove all running docker containers from previous runs.
 ```
 # in the root directory of this use case repo on NFS
@@ -386,7 +382,7 @@ Then run the command below:
 # on worker node
 bash scripts/startup_workers_.sh
 ```
-#### Step 2. Run the multi-node distributed indexing pipeline
+#### Step 2. Run the Multi-Node Distributed Indexing Pipeline
 You can start the indexing pipeline with the commands below on the head node.
 ```
 # inside the doc-automation-indexing container on the head node
@@ -395,7 +391,7 @@ bash scripts/run_distributed_indexing.sh
 ```
 You will see print-outs on your head-node terminal as the indexing process progresses. When the indexing process is finished you will see the embedding time and save time being printed out on the terminal. </p>
 
-#### Step 3. Evaluate retrieval performance
+#### Step 3. Evaluate Retrieval Performance
 You can evaluate the performance (Top-K recall and MRR) of 3 different retrieval methods: 
 1. BM25 only
 2. DPR only
@@ -413,17 +409,18 @@ If you got a connection error at the end of retrieval evaluation when using the 
 If you did not get the results listed in [the table above](#retrieval-performance-of-the-dev-set-queries-on-the-entire-indexed-dureader-vis-dataset), please refer to the [Troubleshooting](#troubleshooting) section.
 
 
-#### Step 4. Stop containers on head node and worker nodes
+#### Step 4. Stop Containers on Head Node and Worker Nodes
 On head node, exit from the indexing container by typing `exit`. And then on both the head node and all worker nodes, run the command below.
 ```
 bash scripts/stop_and_cleanup_containers.sh
 ```
 
-### FAQ for the indexing pipeline
+### FAQ for the Indexing Pipeline
 1. What if I want to run multiple indexing experiments? Do I need to stop/remove/restart containers? - No. You can specify a different ```INDEXNAME``` and a different ```INDEXFILE``` for each experiment in the ```scripts/run_distributed_indexing.sh```.
 2. I got a lot of chmod error messages when I restart the containers. Do I need to worry? - No. These errors will not cause problems for the indexing pipeline.
 
-### Run single-node fine-tuning and indexing pipelines with one line of docker compose
+
+### Run Single-Node Fine-Tuning and Indexing Pipelines with One Line of Docker Compose
 Follow the instructions below to quickly launch the two pipelines with one line of docker compose command. After the process finished, you can then run the [deployment pipeline](#run-single-node-deployment-pipeline). Please make sure you have started the database containers according to [this section](#step-1-run-the-database-containers) prior to executing the following command. 
 ```bash
 cd docker
@@ -468,8 +465,9 @@ flowchart RL
 ```
 
 
-## Run Single-Node Deployment Pipeline 
-Before you run this pipeline, please make sure you have completed all the steps in the [Get Started](#getting-started), [Run DPR Fine Tuning Pipeline](#Run-Single-Node-DPR-Fine-Tuning-Pipeline-with-docker-compose) and [Run Indexing Pipeline](#run-indexing-pipeline-single-node-or-distributed) sections.
+### Run Single-Node Deployment Pipeline 
+Before you run this pipeline, please make sure you have completed all the steps in the [Get Started](#get-started), [Run DPR Fine Tuning Pipeline](#run-single-node-dpr-fine-tuning-pipeline
+) and [Run Indexing Pipeline](#run-indexing-pipeline) sections.
 
 The deployment pipeline is a no-code, config-driven, containerized pipeline. There are 4 config files:
 1. docker-compose yaml to launch the pipeline
@@ -477,7 +475,7 @@ The deployment pipeline is a no-code, config-driven, containerized pipeline. The
 3. pipeline config yaml that specifies the haystack components and properties
 4. UI config yaml </p>
 
-Please refer to [this section](#customize-the-deployment-pipeline) on how to customize the deployment pipeline through config files.</br>
+Please refer to [this section](#customize-deployment-pipeline) on how to customize the deployment pipeline through config files.</br>
 
 In this reference use case, we have implemented deployment pipelines for the three retrieval methods: bm25, dpr, ensemble. Please refer to [this section](#deployment) for more technical details. Here we have prepared 3 sets of configs for the 3 retrieval methods respectively. </p>
 
@@ -510,16 +508,16 @@ And you should see a webpage that look like the one below.
 ![demo](assets/demo.PNG)
 
 
-### Deploy on a different machine
+### Deploy on a Different Machine
 If you want to deploy the pipeline on a different machine than the one you used for indexing, you need to do the following:
-1. Set up the directories, the repo of this use case and Docker images on the new machine as described in the [Get Started](#getting-started) section.
+1. Set up the directories, the repo of this use case and Docker images on the new machine as described in the [Get Started](#get-started) section.
 2. If the new machine does not have access to NFS or if you saved outputs in a local disk, then you need to copy the DPR models and FAISS index files to the new machine.
 3. Copy the Elasticsearch and PostgreSQL database files to the new machine.
 4. Modify the faiss-indexfile.json: change the IP address to the IP address of the new machine.
 5. Double check and modify folder paths in the 4 config files if needed.
 
 
-## Run Using Argo Workflows on K8s Using Helm
+## Run Using Argo
 
 ### 1. Install Helm
 - Install [Helm](https://helm.sh/docs/intro/install/)
@@ -528,12 +526,12 @@ curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scrip
 chmod 700 get_helm.sh && \
 ./get_helm.sh
 ```
-### 2. Setting up K8s
+### 2. Setting Up K8s
 - Install [Argo Workflows](https://argoproj.github.io/argo-workflows/quick-start/) and [Argo CLI](https://github.com/argoproj/argo-workflows/releases)
 - Configure your [Artifact Repository](https://argoproj.github.io/argo-workflows/configure-artifact-repository/)
 - Ensure that your dataset and config files are present in your chosen artifact repository.
 ### 3. Install Workflow Template
-Ensure that you have reviewed the [Hardware Requirements](##hardware-requirements) and each of your nodes has sufficient memory for the workflow. Follow [Helm Chart README](chart/README.md) to properly configure the [values.yaml](chart/values.yaml) file.
+Ensure that you have reviewed the [Hardware Requirements](#validated-hardware-details) and each of your nodes has sufficient memory for the workflow. Follow [Helm Chart README](chart/README.md) to properly configure the [values.yaml](chart/values.yaml) file.
 ```bash
 export NAMESPACE=argo
 helm install --namespace ${NAMESPACE} --set proxy=${http_proxy} document-automation ./chart
@@ -545,7 +543,7 @@ To view your workflow progress
 argo logs @latest -f
 ```
 
-### 5. See result in web UI
+### 5. See Result in web UI
 Once all the steps are successful, open a port-forward so you can access the UI:
 ```bash
 kubectl -n argo port-forward pod/`kubectl -n argo get pods|grep ui-phase|awk '{print $1}'` 8501:8501  --address '0.0.0.0'
@@ -560,9 +558,9 @@ You can open up a browser (Chrome recommended) and type in the following address
 You have run through the three pipelines of this reference use case that builds and deploys an AI-enhanced multi-modal retrieval solution for Dureader-vis images, with which you can use natural language queries to retrieve images. The four pipelines are 1) data preprocessing pipeline, 2) DPR fine tuning pipeline, 3) image-to-document indexing pipeline, 4) deployment pipeline. </p>
 Next you can customize the reference solution to your own use case by following the customization sections below.
 
-### How to customize this workflow/use case
+### How to Customize this Reference Kit
 
-#### Customize data preprocessing pipeline
+#### Customize Data Preprocessing Pipeline
 Haystack APIs are used for fine tuning DPR models, which require a specific format for training data. The data processing script in our reference fine-tuning pipeline is tailored to the data format of the Dureader-vis dataset. Please refer to this [haystack tutorial](https://haystack.deepset.ai/tutorials/09_dpr_training) on how to custom datasets for DPR fine tuning with haystack.</p>
 if you just want to try different passage lengths/overlaps with Dureader-vis dataset, you can change the following params in the ```scripts/run_process_dataset.sh```:
 ```
@@ -571,12 +569,12 @@ OVERLAP=10
 MINCHARS=5
 ```
 
-#### Customize DPR fine tuning pipeline
+#### Customize DPR Fine Tuning Pipeline
 Once you have processed your data according to the format required by haystack APIs, you can use our fine-tuning script implemented in this reference use case. You can customize the training hyperparameters listed [here](assets/Customization.md#customize-dpr-fine-tuning-pipeline). To save your fine-tuned model with a customized name, you can change the ```MODEL_NAME``` variable by ```export MODEL_NAME=<your model name>```. </p>
 **Note**: you need to change the model paths in the deployment pipeline yaml accordingly if you changed the ```MODEL_NAME``` variable.
 
 
-### Customize indexing pipeline
+#### Customize Indexing Pipeline
 You can bring your own images: just put your raw images in the dataset foler. </br>
 You can use command line arguments in the ```scripts/run_distributed_indexing.sh``` to customize the indexing pipeline with the various functionalities already implemented in our use case. A detailed description of the command line arguments is [here](assets/Customization.md#customize-indexing-pipeline). The following components can be customized through command line arguments:
 1. Image preprocessing methods
@@ -585,11 +583,11 @@ You can use command line arguments in the ```scripts/run_distributed_indexing.sh
 4. Certain database settings
 5. DPR model for embedding document passages: you can
 * either use any pretrained models on Huggingface model hub that supports AutoModel.from_pretrained method
-* or use your own DPR model fine tuned on your own data. Refer to the [Customize fine tuning pipeline](#customize-fine-tuning-pipeline) section on how to leverage our pipelline to fine tune your own model.
+* or use your own DPR model fine tuned on your own data. Refer to the [Customize fine tuning pipeline](#customize-dpr-fine-tuning-pipeline) section on how to leverage our pipelline to fine tune your own model.
 
 Advanced users can write their own methods and incorporate more customized functionality into ```src/gen-sods-doc-image-ray.py``` for more flexibility. </br> 
 
-### Customize deployment pipeline
+#### Customize Deployment Pipeline
 This pipeline can be customized through config files. There are 4 config files:
 1. docker-compose yaml to launch the pipeline
 2. env config file that specifies environment variables for docker-compose
@@ -609,9 +607,9 @@ bash scripts/launch_query_retrieval_ui_pipeline.sh
 ```
 
 
-## For advanced users
+## For Advanced Users
 
-### Bring your own scripts 
+### Bring Your Own Scripts 
 
 You can run your own script or run a standalone service using Docker compose with the `dev` service defined in our `docker-compose.yml` as follows:
 ```bash
@@ -628,7 +626,7 @@ docker compose run dev
 Make sure to initialize databases by following [this section](#step-1-run-the-database-containers) if your script requires database interactions.
 
 
-### Run Docker container in an interactive environment
+### Run Docker Container in An Interactive Environment
 Instead of using Docker compose to run the pipelines, you can use docker run commands to go inside Docker containers and run the pipelines interactively. We provide an example below to show how this can be done. </br>
 If your environment requires a proxy to access the internet, export your development system's proxy settings to the docker environment:
 
@@ -678,9 +676,7 @@ To read about other use cases and workflows examples, see these resources:
 export http_proxy=<your http proxy>
 export https_proxy=<your https proxy>
 ```
-
-
----
+8. If you find that cpu utilization of ray cluster is low during the indexing pipeline, you need to tune parameters `RAY_PREPROCESS_CPUS_PER_ACTOR`, `RAY_EMBED_CPUS_PER_ACTOR` in `scripts/run_distributed_indexing.sh`: If the cpu performance is strong, you need to reduce the number of CPUS_PER_ACTOR and increase the number of RAY_ACTORS.
     
 ## Support
 The Document Automation team tracks both bugs and
