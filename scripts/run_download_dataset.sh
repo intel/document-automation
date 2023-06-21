@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set dataset download directory
-DATASET_DIR=$DB_DIR/../../dataset
+DATASET_DIR=$WORKSPACE/dataset
 
 # download dureader dataset
 yes | conda create --force -n dureader_downloader python=3.9
