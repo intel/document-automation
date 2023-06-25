@@ -606,6 +606,19 @@ Then run the command below to launch the customized pipeline.
 bash scripts/launch_query_retrieval_ui_pipeline.sh
 ```
 
+### Using KubeRay to accelerate the indexing process
+
+Currently, in `Indexing Pipeline`, it may take days to generate document indexing file based on server type and number nodes you are using. 
+If you use bare metal, we provide multi-node distributed indexing pipeline with Ray to accelerate the indexing process, but in K8S environment we only support single node now. 
+KubeRay is a powerful, open-source Kubernetes operator that simplifies the deployment and management of Ray applications on Kubernetes. 
+KubeRay will enhance the capabilities of `Indexing Pipeline` in the k8s environment.
+
+To learn about KubeRay, see these resources:
+
+- [Ray on Kubernetes](https://docs.ray.io/en/latest/cluster/kubernetes/index.html#ray-on-kubernetes)
+- [KubeRay Docs](https://ray-project.github.io/kuberay/)
+- [KubeRay GitHub Repository](https://github.com/ray-project/kuberay)
+
 
 ## For Advanced Users
 
