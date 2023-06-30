@@ -5,7 +5,7 @@
 This reference use case is an end-to-end reference solution for building an AI-augmented multi-modal semantic search system for document images (for example, scanned documents). This solution can help enterprises gain more insights from their document archives more quickly and easily using natural language queries. 
 
 ## Solution Technical Overview
-Enterprises are accumulating a vast quantity of documents, a large portion of which is in image formats such scanned documents. These documents contain a large amount of valuable information, but it is a challenge for enterprises to index, search and gain insights from the document images due to the reasons below:
+Enterprises are accumulating a vast quantity of documents, a large portion of which is in image formats such as scanned documents. These documents contain a large amount of valuable information, but it is a challenge for enterprises to index, search and gain insights from the document images due to the reasons below:
 * The end-to-end (e2e) solution involves many components that are not easy to integrate together.
 * Indexing a large document image collection is very time consuming. Distributed indexing capability is needed, but there is no open-source solution that is ready to use.
 * Query against document image collections with natural language requires multi-modality AI that understands both images and languages. Building such multi-modality AI models requires deep expertise in machine learning.
@@ -13,7 +13,7 @@ Enterprises are accumulating a vast quantity of documents, a large portion of wh
 * Majority of multi-modality AI models can only comprehend English, developing non-English models takes time and requires ML experience.
 
 
-In this reference use case, we implement and demonstrate a complete end-to-end solution that help enterprises tackle these challenges and jump start the customization of the referece solution for their own document archives. The architecture of the reference use case is shown in the figure below. It is composed of 3 pipelines, for which we will go into details in the [How It Works](#how-it-works) section: 
+In this reference use case, we implement and demonstrate a complete end-to-end solution that helps enterprises tackle these challenges and jump start the customization of the referece solution for their own document archives. The architecture of the reference use case is shown in the figure below. It is composed of 3 pipelines, for which we will go into details in the [How It Works](#how-it-works) section: 
 * Single-node Dense Passage Retriever (DPR) fine tuning pipeline
 * Image-to-document indexing pipeline (can be run on either single node or distributed on multiple nodes)
 * Single-node deployment pipeline
@@ -57,7 +57,7 @@ In this reference use case, we used a pretrained cross-lingual language model op
 The stock haystack library only supports BERT based DPR models, we have made modifications to the haystack APIs to allow any encoder architecture (e.g., RoBERTa, xlm-RoBERTa, etc.) that you can load via the from_pretrained method of Hugging Face transformers library. By using our containers, you can fine tune a diverse array of custom DPR models by setting ```xlm_roberta``` flag to true when initiating ```DensePassageRetriever``` object. (Note: although the flag is called "xlm_roberta", it supports any model architecture that can be loaded with from_pretrained method.)
 
 ### Image-to-Document Indexing
-In order to retrieve documents in response to queries, we first need to index the documents where the raw document images are converted into text passages and stored into databases with indices. In this reference use case, we demonstrate that use an ensemble retrieval method (BM25 + DPR) improves the retrieval recall and MRR over the BM25 only and DPR only retrieval methods. In order to condcut the ensemble retrieval, we need to build two databases: 1) an ElasticSearch database for BM25 retrieval, and 2) a PostgreSQL database plus a FAISS index file for DPR retrieval. </p>
+In order to retrieve documents in response to queries, we first need to index the documents where the raw document images are converted into text passages and stored into databases with indices. In this reference use case, we demonstrate that using an ensemble retrieval method (BM25 + DPR) improves the retrieval recall and MRR over the BM25 only and DPR only retrieval methods. In order to condcut the ensemble retrieval, we need to build two databases: 1) an ElasticSearch database for BM25 retrieval, and 2) a PostgreSQL database plus a FAISS index file for DPR retrieval. </p>
 
 The architecture of the indexing pipeline is shown in the diagram below. There are 3 tasks in the indexing pipeline:
 1. Preprocessing task: this task consists of 3 steps - image preprocessing, text extraction with OCR (optical character recognition), post processing of OCR outputs. This task converts images into text passages.
@@ -89,7 +89,7 @@ export NO_PROXY=<your original NO_PROXY>,haystack-api
 Define an environment variable that will store the workspace path, this can be an existing directory or one to be created in further steps. This ENVVAR will be used for all the commands executed using absolute paths.
 
 ```
-export WORKSPACE=/mydisk/mtw/mywork
+export WORKSPACE=/mydisk/mtw/work
 ```
 
 ### Set Up Work Directories on NFS and Local Disk of Head Node
@@ -101,6 +101,7 @@ Note: If you want to run the distributed indexing pipeline with multiple nodes, 
 ```
 # On NFS for distributed indexing
 # or localdisk if only running single-node pipelines
+mkdir -p $WORKSPACE
 cd $WORKSPACE
 mkdir $WORKSPACE/dataset $WORKSPACE/output
 mkdir $WORKSPACE/output/dpr_models $WORKSPACE/output/index_files $WORKSPACE/output/processed_data
@@ -108,11 +109,10 @@ mkdir $WORKSPACE/output/dpr_models $WORKSPACE/output/index_files $WORKSPACE/outp
 
 On the local disk of the head node, make a database directory to store the files generated by the indexing pipeline.
 ```
-# On the local disk of the head node
-mkdir $WORKSPACE/output/databases
 # set up env variable for databases directory
-cd $WORKSPACE/output/databases
-export DB_DIR=$PWD
+export DB_DIR=/mydisk/mtw/databases
+# On the local disk of the head node, create database directory
+mkdir -p $DB_DIR
 ```
 
 Double check the environment variables are set correctly with commands below:
@@ -349,6 +349,7 @@ docker compose down
 
 
 ### Run Indexing Pipeline with Multi Node
+Make clear that [Run Single-Node Preprocessing Pipeline](#run-single-node-preprocessing-pipeline) and [Run Single-Node DPR Fine-Tuning Pipeline](#run-single-node-DPR-fine-tuning-pipeline) need to be executed before running this section.
 #### Step 1. Start Containers on Head Node and Worker Nodes
 1. Stop and remove all running docker containers from previous runs.
 ```
@@ -370,7 +371,7 @@ Then run the command:
 bash scripts/startup_ray_head_and_db.sh
 ```
 Once you successfully run the command above, you will be taken inside the doc-automation-indexing container on the head node.
-**Note**:  If you got error from docker daemon when running distributed indexing pipeline that "mkdir permission denied", it is due to NFS policy not allowing mounting folders on NFS to docker containers. Contact your IT to get permission or change to an NFS that allowing container volume mounting.
+**Note**:  If you got error from docker daemon when running distributed indexing pipeline that "mkdir permission denied", it is due to NFS policy not allowing mounting folders on NFS to docker containers. Contact your IT to get permission or change to an NFS that allows container volume mounting.
 
 3. Start doc-automation-indexing container on all the worker nodes for distributed indexing. </br>
 Set the following variable in the ```scripts/startup_workers_.sh```. Note: ```num_threads <= total number of threads of worker node```.
@@ -410,7 +411,7 @@ If you did not get the results listed in [the table above](#retrieval-performanc
 
 
 #### Step 4. Stop Containers on Head Node and Worker Nodes
-On head node, exit from the indexing container by typing `exit`. And then on both the head node and all worker nodes, run the command below.
+On head node, exit from the indexing container by typing `exit`. And then on the head node, run the command below.
 ```
 bash scripts/stop_and_cleanup_containers.sh
 ```
@@ -467,7 +468,7 @@ flowchart RL
 
 ### Run Single-Node Deployment Pipeline 
 Before you run this pipeline, please make sure you have completed all the steps in the [Get Started](#get-started), [Run DPR Fine Tuning Pipeline](#run-single-node-dpr-fine-tuning-pipeline
-) and [Run Indexing Pipeline](#run-indexing-pipeline) sections.
+) and [Run Indexing Pipeline](#run-indexing-pipeline) sections, or the section [Run Single-Node Fine-Tuning and Indexing Pipelines with One Line of Docker Compose](#run-single-node-fine-tuning-and-indexing-pipelines-with-one-line-of-docker-compose).
 
 The deployment pipeline is a no-code, config-driven, containerized pipeline. There are 4 config files:
 1. docker-compose yaml to launch the pipeline
@@ -499,7 +500,7 @@ To deploy ensemble retrieval, use the following commands:
 cd $WORKSPACE/document-automation/docker
 docker compose --env-file env.ensemble -f docker-compose-ensemble.yml up 
 ```
-Once the containers are launched successfully, you can open up a browser (Chrome recommended) and type in the following address:
+Once any of the deployments is launched successfully, you can open up a browser (Chrome recommended) and type in the following address:
 ```
 <head node ip>:8501
 ```
@@ -657,7 +658,7 @@ For example, you can run the pre-process workflow with the `docker run` command,
 export DATASET=$PWD/../../dureader_vis_docvqa
 export SAVEPATH=${PWD}/../../output/precessed_data
 docker run -a stdout ${DOCKER_RUN_ENVS} \
-           -v /$PWD/../document_automation_ref_kit:/home/user/application \
+           -v /$PWD/../../document-automation:/home/user/application \
            -v /${DATASET}:/home/user/docvqa \
            -v /${SAVEPATH}:/home/user/output/processed_data \
            --privileged --network host --init -it --rm --pull always \
@@ -669,6 +670,7 @@ Then you will be taken inside the container and you can run the command below fo
 ```bash
 bash scripts/run_process_dataset.sh
 ```
+Note that please unset ENV variables after finishing if you want to try another execution method.
 
 ## Learn More
 To read about other use cases and workflows examples, see these resources:
