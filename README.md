@@ -656,11 +656,11 @@ For example, you can run the pre-process workflow with the `docker run` command,
 
 ```bash
 export DATASET=$PWD/../../dureader_vis_docvqa
-export SAVEPATH=${PWD}/../../output/precessed_data
+export SAVEPATH=$PWD/../../output/precessed_data
 docker run -a stdout ${DOCKER_RUN_ENVS} \
-           -v /$PWD/../../document-automation:/home/user/application \
-           -v /${DATASET}:/home/user/docvqa \
-           -v /${SAVEPATH}:/home/user/output/processed_data \
+           -v $PWD/../../document-automation:/home/user/application \
+           -v ${DATASET}:/home/user/docvqa \
+           -v ${SAVEPATH}:/home/user/output/processed_data \
            --privileged --network host --init -it --rm --pull always \
            -w /home/user/application \
            intel/ai-workflows:beta-doc-automation-fine-tuning \
