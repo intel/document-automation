@@ -10,15 +10,15 @@ retrieval_method: ensemble
 dataset:
   type: <local/nfs>
   local:
-    application_path: nil
     docvqa_path: nil
     es_data_path: nil
     postgre_data_path: nil
     dataset_path: nil
     output_path: nil
+    config_path: nil
   nfs:
     server: nil
     path: nil
-    application_path: nil
     docvqa_path: nil
     dataset_path: nil
+    config_path: nil
