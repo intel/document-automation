@@ -86,10 +86,10 @@ Append "haystack-api" to $NO_PROXY:
 export NO_PROXY=<your original NO_PROXY>,haystack-api
 ```
 
-Define an environment variable that will store the workspace path, this can be an existing directory or one to be created in further steps. This ENVVAR will be used for all the commands executed using absolute paths.
+Define an environment variable that will store the workspace path named `NFS_DIR`, this can be an existing directory or one to be created in further steps. This ENVVAR will be used for all the commands executed using absolute paths.
 
 ```
-export WORKSPACE=/mydisk/mtw/work
+export NFS_DIR=/mydisk/mtw/work
 ```
 
 ### Set Up Work Directories on NFS and Local Disk of Head Node
