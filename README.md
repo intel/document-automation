@@ -291,6 +291,8 @@ Our reference `docker-compose.yml` is set up to work with the setup described in
 #### Step 1. Run the Database Containers
 Run the elasticsearch and postgresql database containers using Docker compose as follows 
 ```bash
+# add permission for esdb
+mkdir -p $DB_DIR/esdb && chmod -R 777 $DB_DIR/esdb
 # if not in the docker folder,
 # go inside the docker folder of the use case repo
 cd $WORKSPACE/document-automation/docker
@@ -349,7 +351,7 @@ docker compose down
 
 
 ### Run Indexing Pipeline with Multi Node
-Make clear that [Run Single-Node Preprocessing Pipeline](#run-single-node-preprocessing-pipeline) and [Run Single-Node DPR Fine-Tuning Pipeline](#run-single-node-DPR-fine-tuning-pipeline) need to be executed before running this section.
+[Run Single-Node Preprocessing Pipeline](#run-single-node-preprocessing-pipeline) and [Run Single-Node DPR Fine-Tuning Pipeline](#run-single-node-DPR-fine-tuning-pipeline) need to be executed before running this section.
 #### Step 1. Start Containers on Head Node and Worker Nodes
 1. Stop and remove all running docker containers from previous runs.
 ```
@@ -411,7 +413,7 @@ If you did not get the results listed in [the table above](#retrieval-performanc
 
 
 #### Step 4. Stop Containers on Head Node and Worker Nodes
-On head node, exit from the indexing container by typing `exit`. And then on the head node, run the command below.
+On head node, exit from the indexing container by typing `exit`. And then on both the head node and all worker nodes, run the command below.
 ```
 bash scripts/stop_and_cleanup_containers.sh
 ```
@@ -675,7 +677,7 @@ To read about other use cases and workflows examples, see these resources:
 ## Troubleshooting
 1. If you got "permissions denied" error to write to the output folder in the fine-tuning pipeline, it is very likely that you do not have adequate write permissions to write to the folder on NFS. You can use `chmod` to change the permissions of the output folder. If you cannot change the permissions, you can try to set up the work directory on a local disk where you have adequate write permissions.
 2. If you got errors about not being able to write to databases,or if either postgresql or elasticsearch container did not get started with docker-compose commands, the errors are likely due to the postgresql container user and the elasticsearch container user being different, and they have different/inadequate permissions to write to the database directory that you have set up on your machine. Change the write permissions of the `$DB_DIR` with `chmod` commands so that both postgresql and elasticsearch containers can write to it.
-3. If you got error from docker daemon when running distributed indexing pipeline that "mkdir permission denied", it is due to NFS policy not allowing mounting folders on NFS to docker containers. Contact your IT to get permission or change to an NFS that allowing container volume mounting.
+3. If you got error from docker daemon when running distributed indexing pipeline that "mkdir permission denied", it is due to NFS policy not allowing mounting folders on NFS to docker containers. Contact your IT to get permission or change to an NFS that allows container volume mounting.
 4. If you got out of memory (OOM) error from Ray actors, or the ray process got stuck for a very long time, try reducing the number of actors and increasing the number of CPUs per actor. As a rule of thumb, max_num_ray_actors * num_cpus_per_actor should not exceed the total number of threads of your CPU. For example, you have 48 CPU cores in your system and have hyperthreading turned on, in this case you have in total 48 * 2 = 96 threads, max_num_ray_actors * num_cpus_per_actor should not exceed 96.
 5. If you see diffrent retrieval performances: first of all what we reported here is retrieval performance on the entire Dureader-vis dataset, not a subset, make sure you have indexed the entire Dureader-vis dataset. Secondly, due to the stochastic nature of the DPR fine tuning process, you might have a slightly different DPR model than ours, so you will likely see a different recall and MRR with your DPR model.
 6. If you got a connection error at the end of retrieval evaluation when using the multi-node distributed indexing pipeline, you ignore it. This error does not have any impact on the indexing pipeline or the evaluation results.
