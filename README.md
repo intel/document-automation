@@ -241,6 +241,7 @@ Our reference `docker-compose.yml` is set up to take default folder directories 
 Run the fine-tuning pipeline using Docker compose as shown below. You will see progress bars showing the training status. The default hyperparameters used for fine tuning are listed [here](assets/Customization.md#customize-dpr-fine-tuning-pipeline).</br>
 
 ```bash
+cd $NFS_DIR/document-automation/docker
 docker compose run fine-tuning
 ```
 
@@ -323,6 +324,7 @@ flowchart RL
 
 #### Step 2. Run Single-Node Indexing Pipeline 
 ```bash
+cd $NFS_DIR/document-automation/docker
 docker compose run indexing
 ```
 
@@ -338,6 +340,7 @@ RETRIEVAL_METHOD="ensemble" #options: bm25, dpr, ensemble (default)
 ```
 To evaluate the retrieval performance, run the following command:
 ```bash
+cd $NFS_DIR/document-automation/docker
 docker compose run performance-retrieval
 ```
 
@@ -346,6 +349,7 @@ If you did not get the results listed in [the table above](#retrieval-performanc
 #### Step 4. Stop and Remove All the Services
 Use the following command to stop and remove all the services at any time. 
 ```bash
+cd $NFS_DIR/document-automation/docker
 docker compose down
 ```
 
@@ -370,6 +374,7 @@ num_threads_indexing=<num_threads to be used for indexing>
 Then run the command:
 ```
 # on head node
+cd $NFS_DIR/document-automation
 bash scripts/startup_ray_head_and_db.sh
 ```
 Once you successfully run the command above, you will be taken inside the doc-automation-indexing container on the head node.
@@ -383,6 +388,7 @@ num_threads=<# of threads you want to use for indexing on worker node>
 Then run the command below:
 ```
 # on worker node
+cd $NFS_DIR/document-automation
 bash scripts/startup_workers_.sh
 ```
 #### Step 2. Run the Multi-Node Distributed Indexing Pipeline
@@ -406,6 +412,7 @@ RETRIEVAL_METHOD="ensemble" #options: bm25, dpr, ensemble (default)
 
 Then run the command below inside the doc-automation-indexing container on the head node to evaluate performance of the retrieval methods.
 ```
+cd /home/user/application
 bash scripts/run_retrieval_eval.sh
 ```
 If you got a connection error at the end of retrieval evaluation when using the multi-node distributed indexing pipeline, you ignore it. This error does not have any impact on the indexing pipeline or the evaluation results.</br>
@@ -415,6 +422,7 @@ If you did not get the results listed in [the table above](#retrieval-performanc
 #### Step 4. Stop Containers on Head Node and Worker Nodes
 On head node, exit from the indexing container by typing `exit`. And then on both the head node and all worker nodes, run the command below.
 ```
+cd $NFS_DIR/document-automation
 bash scripts/stop_and_cleanup_containers.sh
 ```
 
