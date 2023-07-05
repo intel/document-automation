@@ -439,7 +439,7 @@ docker compose run performance-retrieval &
 ```
 This will run the pipelines in the background.
 
-For MLOPs engineers, the diagram below shows the interactions between different containers when running the single-node fine-tuning and indexing pipelines.
+For MLOPs engineers, the diagram below shows the interactions between different containers when running the single-node preprocessing, fine-tuning and indexing pipelines.
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
 flowchart RL
