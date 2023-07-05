@@ -23,8 +23,8 @@ echo $source_code
 echo $docvqa
 echo $output
 
-elasticsearch_data=$DB_DIR/esdb
-postgres_data=$DB_DIR/db
+elasticsearch_data=$LOCAL_DIR/esdb
+postgres_data=$LOCAL_DIR/db
 
 echo "elasticsearch database directory is "$elasticsearch_data
 echo "postgresql database directory is "$postgres_data

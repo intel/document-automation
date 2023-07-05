@@ -54,7 +54,7 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xmx8g -Xms8g
     volumes:
-      - ${ESDB:-$DB_DIR}/esdb:/usr/share/elasticsearch/data
+      - ${ESDB:-$LOCAL_DIR}/esdb:/usr/share/elasticsearch/data
 
   postgresql:
     image: postgres:14.1-alpine
@@ -65,7 +65,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
-      - /${DB:-$DB_DIR}/db:/var/lib/postgresql/data
+      - /${DB:-$LOCAL_DIR}/db:/var/lib/postgresql/data
       - /${PWD}/psql_init.sql:/docker-entrypoint-initdb.d/psql_init.sql
 
   indexing:
