@@ -19,11 +19,11 @@ EVAL_EVERY=87
 NUM_HARD_NEG=0
 
 # model params
-#QUERY_ENCODER="microsoft/infoxlm-base"
-#DOC_ENCODER="microsoft/infoxlm-base"
+QUERY_ENCODER="microsoft/infoxlm-base"
+DOC_ENCODER="microsoft/infoxlm-base"
 # model params (if you are using locally downloaded pre-trained model from HuggingFace)
-QUERY_ENCODER="/home/user/output/dpr_models/"${MODEL_NAME}"/query_encoder"
-DOC_ENCODER="/home/user/output/dpr_models/"${MODEL_NAME}"/passage_encoder"
+# QUERY_ENCODER="/home/user/output/dpr_models/"${MODEL_NAME}"/query_encoder"
+# DOC_ENCODER="/home/user/output/dpr_models/"${MODEL_NAME}"/passage_encoder"
 MAX_LEN_QUERY=64
 MAX_LEN_PASSAGE=500
 
