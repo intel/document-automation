@@ -435,7 +435,12 @@ bash scripts/stop_and_cleanup_containers.sh
 Follow the instructions below to quickly launch the two pipelines with one line of docker compose command. After the process finished, you can then run the [deployment pipeline](#run-single-node-deployment-pipeline). Please make sure you have started the database containers according to [this section](#step-1-run-the-database-containers) prior to executing the following command. 
 ```bash
 cd $NFS_DIR/document-automation/docker
-docker compose run performance-retrieval
+docker compose run indexing-performance-retrieval &
+```
+This will run the pipelines in the background.
+To view status
+```bash
+fg
 ```
 
 For MLOPs engineers, the diagram below shows the interactions between different containers when running the single-node preprocessing, fine-tuning and indexing pipelines.
