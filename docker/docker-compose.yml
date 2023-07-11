@@ -54,7 +54,7 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xmx8g -Xms8g
     volumes:
-      - ${ESDB:-$DB_DIR}/esdb:/usr/share/elasticsearch/data
+      - ${ESDB:-$LOCAL_DIR}/esdb:/usr/share/elasticsearch/data
 
   postgresql:
     image: postgres:14.1-alpine
@@ -65,7 +65,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
-      - /${DB:-$DB_DIR}/db:/var/lib/postgresql/data
+      - /${DB:-$LOCAL_DIR}/db:/var/lib/postgresql/data
       - /${PWD}/psql_init.sql:/docker-entrypoint-initdb.d/psql_init.sql
 
   indexing:
@@ -137,3 +137,35 @@ services:
       - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/passage_encoder:/home/user/output/dpr_models/${MODEL_NAME}/passage_encoder
     working_dir: /home/user/application
 
+  indexing-performance-retrieval:
+    build:
+      args:
+        http_proxy: ${http_proxy}
+        https_proxy: ${https_proxy}
+        no_proxy: ${no_proxy}
+      dockerfile: docker/Dockerfile.indexing
+      context: ../../document-automation
+    image: intel/ai-workflows:beta-doc-automation-indexing
+    privileged: true
+    network_mode: "host"
+    command: sh -c "ray start --node-ip-address=${HEAD_IP} --head --dashboard-host='0.0.0.0' --dashboard-port=8265 --disable-usage-stats && \ python src/test_pocr.py && \ bash scripts/run_distributed_indexing.sh && \ bash scripts/make_retrieval_eval_csv.sh && \ bash scripts/run_retrieval_eval.sh"
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8265:8265"
+      - "5432:5432"
+    environment:
+      - HEAD_IP=localhost
+      - MODEL_NAME=${MODEL_NAME}
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - no_proxy=${no_proxy}
+    volumes:
+      - ../../document-automation:/home/user/application
+      - /${SAVEPATH:-$PWD/../../output}/index_files:/home/user/output/index_files
+      - /${SAVEPATH:-$PWD/../../output}/processed_data:/home/user/output/processed_data/
+      - /${DATASET:-$PWD/../../dureader_vis_docvqa}:/home/user/docvqa
+      - /${DATASET:-$PWD/../../dataset}:/home/user/dataset
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/query_encoder:/home/user/output/dpr_models/${MODEL_NAME}/query_encoder
+      - /${SAVEPATH:-$PWD/../../output}/dpr_models/${MODEL_NAME}/passage_encoder:/home/user/output/dpr_models/${MODEL_NAME}/passage_encoder
+    working_dir: /home/user/application
