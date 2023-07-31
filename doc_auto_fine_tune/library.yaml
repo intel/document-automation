@@ -1,0 +1,32 @@
+---
+title: finetune
+version: 1.0.0
+description:  Document Automation Fine-tune
+icon: python
+
+tags:
+  - finetune
+
+command: python doc_auto_finetune.py
+requirements:
+  cpu: 24
+  memory: 48
+  gpu: 0
+  hpu: 0
+
+image: ai-workflows:beta-fraud-detection-classical-ml
+language: python3
+
+arguments:
+  - key: workspace
+    type: 'categorical'
+    values:
+      - 'output'
+ - key: dataset-name
+    type: 'categorical'
+    values:
+      - 'dureader_vis_images_part'
+  - key: dataset-file
+    type: 'categorical'
+    values:
+      - 'docvqa_train.json'
