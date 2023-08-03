@@ -11,7 +11,7 @@ services:
         no_proxy: ${no_proxy}
       context: ../../document-automation
       dockerfile: docker/Dockerfile.fine-tuning
-    image: intel/ai-workflows:beta-doc-automation-fine-tuning
+    image: intel/ai-workflows:doc-automation-fine-tuning
     network_mode: "host"
     privileged: true
     command: sh -c "bash scripts/run_process_dataset.sh"
@@ -26,7 +26,7 @@ services:
     working_dir: /home/user/application
 
   fine-tuning:
-    image: intel/ai-workflows:beta-doc-automation-fine-tuning
+    image: intel/ai-workflows:doc-automation-fine-tuning
     network_mode: "host"
     privileged: true
     command: sh -c "bash scripts/run_dpr_training.sh"
@@ -76,7 +76,7 @@ services:
         no_proxy: ${no_proxy}
       dockerfile: docker/Dockerfile.indexing
       context: ../../document-automation
-    image: intel/ai-workflows:beta-doc-automation-indexing
+    image: intel/ai-workflows:doc-automation-indexing
     privileged: true
     network_mode: "host"
     command: sh -c "ray start --node-ip-address=${HEAD_IP} --head --dashboard-host='0.0.0.0' --dashboard-port=8265 --disable-usage-stats && \ python src/test_pocr.py && \ bash scripts/run_distributed_indexing.sh"
@@ -100,7 +100,7 @@ services:
     working_dir: /home/user/application
 
   performance-retrieval:
-    image: intel/ai-workflows:beta-doc-automation-indexing
+    image: intel/ai-workflows:doc-automation-indexing
     privileged: true
     depends_on:
       - indexing
@@ -119,7 +119,7 @@ services:
 
   dev:
     command: sh -c "${WORKFLOW:-bash scripts/run_dpr_training.sh}"
-    image: intel/ai-workflows:${TAG:-beta-doc-automation-fine-tuning}
+    image: intel/ai-workflows:${TAG:-doc-automation-fine-tuning}
     environment:
       - MODEL_NAME=${MODEL_NAME:-my_dpr_model}
       - http_proxy=${http_proxy}
@@ -145,7 +145,7 @@ services:
         no_proxy: ${no_proxy}
       dockerfile: docker/Dockerfile.indexing
       context: ../../document-automation
-    image: intel/ai-workflows:beta-doc-automation-indexing
+    image: intel/ai-workflows:doc-automation-indexing
     privileged: true
     network_mode: "host"
     command: sh -c "ray start --node-ip-address=${HEAD_IP} --head --dashboard-host='0.0.0.0' --dashboard-port=8265 --disable-usage-stats && \ python src/test_pocr.py && \ bash scripts/run_distributed_indexing.sh && \ bash scripts/make_retrieval_eval_csv.sh && \ bash scripts/run_retrieval_eval.sh"

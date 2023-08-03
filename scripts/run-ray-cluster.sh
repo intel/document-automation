@@ -209,7 +209,7 @@ if [[ $run_type = "startup_all" ]]; then
     docker run -itd -p 8265:8265 --cap-add=NET_ADMIN --network host -v ${workspace}:/home/user/application -v ${dataset}:/home/user/dataset -v ${output}:/home/user/output -v ${docvqa}:/home/user/docvqa \
             --cpuset-cpus=${ray_head_cores_range} \
             --env HEAD_IP=$HEAD_IP --env http_proxy=$http_proxy --env https_proxy=$https_proxy \
-            --shm-size=64gb --name $head_name intel/ai-workflows:beta-doc-automation-indexing /bin/bash & #intel/ai-workflows:odqa-haystack-api 
+            --shm-size=64gb --name $head_name intel/ai-workflows:doc-automation-indexing /bin/bash & #intel/ai-workflows:odqa-haystack-api 
     sleep 5
     #docker exec -d $head_name /bin/bash -c "ip link del dev eth1"
     docker exec -d $head_name /bin/bash -c "ray start --node-ip-address=${head_address} --head --dashboard-host='0.0.0.0' --dashboard-port=8265"
@@ -227,7 +227,7 @@ if [[ $run_type = "startup_all" ]]; then
         docker run -itd --cpuset-cpus=${ray_worker_cores_range} --cap-add=NET_ADMIN --network host -v ${workspace}:/home/user/application -v ${dataset}:/home/user/dataset -v ${output}:/home/user/output \
         --env HEAD_IP=$HEAD_IP --env http_proxy=$http_proxy --env https_proxy=$https_proxy \
                 --shm-size=2gb \
-                --name $worker_name  intel/ai-workflows:beta-doc-automation-indexing  /bin/bash &
+                --name $worker_name  intel/ai-workflows:doc-automation-indexing  /bin/bash &
         sleep 5
         #docker exec -d $worker_name /bin/bash -c "ip link del dev eth1"
         docker exec -d $worker_name /bin/bash -c "ray start --address=$head_address"
@@ -251,7 +251,7 @@ elif [[ $run_type = "startup_workers" ]]; then
         docker run -itd --cpuset-cpus=${ray_worker_cores_range} --cap-add=NET_ADMIN --network host -v ${workspace}:/home/user/application -v ${dataset}:/home/user/dataset -v ${output}:/home/user/output\
         --env HEAD_IP=$HEAD_IP --env http_proxy=$http_proxy --env https_proxy=$https_proxy \
                 --shm-size=2gb \
-                --name $worker_name  intel/ai-workflows:beta-doc-automation-indexing /bin/bash &
+                --name $worker_name  intel/ai-workflows:doc-automation-indexing /bin/bash &
         sleep 5
         #docker exec -d $worker_name /bin/bash -c "ip link del dev eth1"
         docker exec -d $worker_name /bin/bash -c "ray start --address=$head_address"
