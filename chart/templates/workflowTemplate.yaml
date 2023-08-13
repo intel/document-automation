@@ -12,7 +12,7 @@ spec:
             arguments:
               parameters:
                 - name: workflow
-                  value: beta-doc-automation-fine-tuning
+                  value: doc-automation-fine-tuning
                 - name: cmd
                   value: 'bash scripts/run_process_dataset_argo.sh'
           - name: fine-tuning
@@ -20,7 +20,7 @@ spec:
             arguments:
               parameters:
                 - name: workflow
-                  value: beta-doc-automation-fine-tuning
+                  value: doc-automation-fine-tuning
                 - name: cmd
                   value: 'bash scripts/run_dpr_training.sh'
             dependencies:
@@ -38,7 +38,7 @@ spec:
             arguments:
               parameters:
                - name: workflow
-                 value: beta-doc-automation-indexing
+                 value: doc-automation-indexing
                - name: postgre_ip
                  value: "{{ `{{tasks.postgresql-db.ip}}` }}"
                - name: es_ip
@@ -54,7 +54,7 @@ spec:
             arguments:
              parameters:
                - name: workflow
-                 value: beta-doc-automation-indexing
+                 value: doc-automation-indexing
                - name: postgre_ip
                  value: "{{ `{{tasks.postgresql-db.ip}}` }}"
                - name: es_ip
@@ -72,7 +72,7 @@ spec:
                 - name: postgre_ip
                   value: "{{ `{{tasks.postgresql-db.ip}}` }}"
                 - name: workflow
-                  value: beta-doc-automation-indexing
+                  value: doc-automation-indexing
             dependencies:
               - performance-retrieval
           - name: ui

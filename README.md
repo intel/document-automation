@@ -122,7 +122,7 @@ echo $LOCAL_DIR
 echo $MODEL_NAME
 ```
 **Important Notes**: 
-1. Users need to have adequate write permissions to the folders on NFS. IT policies of NFS may prvent you from mounting volumes on NFS to containers. Please refer to the [Troubleshooting](#troubleshooting) section if you ever ran into "permission denied" error when running the pipelines.
+1. Users need to have adequate write permissions to the folders on NFS. IT policies of NFS may prevent you from mounting volumes on NFS to containers. Please refer to the [Troubleshooting](#troubleshooting) section if you ever ran into "permission denied" error when running the pipelines.
 2. It is important to set up the $LOCAL_DIR variable. Make sure you have it set up.
 3. You may want to double check your http and https proxies on your machines to make sure you can download models from external internet, more specifically, from Hugging Face model hub and from PaddleOCR.
 
@@ -213,8 +213,8 @@ docker compose build
 OR 
 
 ```bash
-docker pull intel/ai-workflows:beta-doc-automation-fine-tuning
-docker pull intel/ai-workflows:beta-doc-automation-indexing
+docker pull intel/ai-workflows:doc-automation-fine-tuning
+docker pull intel/ai-workflows:doc-automation-indexing
 ```
 
 ### Run Single-Node Preprocessing Pipeline 
@@ -670,7 +670,7 @@ docker run -a stdout ${DOCKER_RUN_ENVS} \
            -v ${SAVEPATH}:/home/user/output/processed_data \
            --privileged --network host --init -it --rm --pull always \
            -w /home/user/application \
-           intel/ai-workflows:beta-doc-automation-fine-tuning \
+           intel/ai-workflows:doc-automation-fine-tuning \
            /bin/bash
 ```
 Then you will be taken inside the container and you can run the command below for pre-processing:
@@ -687,7 +687,7 @@ To read about other use cases and workflows examples, see these resources:
 
 
 ## Troubleshooting
-1. If you got "permissions denied" error to write to the output folder in the fine-tuning pipeline, it is very likely that you do not have adequate write permissions to write to the folder on NFS. You can use `chmod` to change the permissions of the output folder. If you cannot change the permissions, you can try to set up the work directory on a local disk where you have adequate write permissions.
+1. If you got "permissions denied" error to write to the output folder in the preprocessing or fine-tuning pipeline, it is very likely that you do not have adequate write permissions to write to the folder on NFS. You can use `chmod` to change the permissions of the output folder. If you cannot change the permissions, you can try to set up the work directory on a local disk where you have adequate write permissions.
 2. If you got errors about not being able to write to databases,or if either postgresql or elasticsearch container did not get started with docker-compose commands, the errors are likely due to the postgresql container user and the elasticsearch container user being different, and they have different/inadequate permissions to write to the database directory that you have set up on your machine. Change the write permissions of the `$LOCAL_DIR` with `chmod` commands so that both postgresql and elasticsearch containers can write to it.
 3. If you got error from docker daemon when running distributed indexing pipeline that "mkdir permission denied", it is due to NFS policy not allowing mounting folders on NFS to docker containers. Contact your IT to get permission or change to an NFS that allows container volume mounting.
 4. If you got out of memory (OOM) error from Ray actors, or the ray process got stuck for a very long time, try reducing the number of actors and increasing the number of CPUs per actor. As a rule of thumb, max_num_ray_actors * num_cpus_per_actor should not exceed the total number of threads of your CPU. For example, you have 48 CPU cores in your system and have hyperthreading turned on, in this case you have in total 48 * 2 = 96 threads, max_num_ray_actors * num_cpus_per_actor should not exceed 96.
