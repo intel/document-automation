@@ -191,7 +191,7 @@ class GenDocStoreBase:
 
     
     def gen_docstore(self):
-        DATASET_ROOT_PATH = "/home/user/dataset/"
+        DATASET_ROOT_PATH = self.cfg.dataset_path
         dataset_dirs = os.listdir(DATASET_ROOT_PATH)
         dataset_dirs = [ DATASET_ROOT_PATH + x   for x in dataset_dirs if os.path.isdir( DATASET_ROOT_PATH + x ) ]
         if len(dataset_dirs) == 0 :
@@ -328,7 +328,7 @@ def parse_cmd():
     args.add_argument('--preprocess_cpus_per_actor', type=int, default=4, dest='preprocess_cpus_per_actor', help='num of cpus per ray actor for preprocessing task')
     args.add_argument('--writing_cpus_per_actor', type=int, default=4, dest='writing_cpus_per_actor', help='num of cpus per ray actor for writing passages into database')
     args.add_argument('--embedding_cpus_per_actor', type=int, default=10, dest='embedding_cpus_per_actor', help='num of cpus per ray actor for embedding task')
-    
+    args.add_argument('--dataset_path', type=str, default='/home/user/dataset/', dest='dataset_path', help='dataset root path')
     
     
     

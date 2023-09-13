@@ -1,0 +1,24 @@
+---
+title: sampled_data_connector
+version: 1.0.0
+description:  Download dataset from public Google Drive folder 
+icon: python
+
+tags:
+  - training
+
+command: python3 fetch_data.py
+requirements:
+  cpu: 2
+  memory: 4
+  gpu: 0
+  hpu: 0
+
+image: python:3.8
+language: python3
+
+arguments:
+  - key: dir_url
+    type: 'categorical'
+    values:
+      - 'https://drive.google.com/drive/folders/1V1h-n6_iNWKf3jgIKjxLsRAHAK0InQVA?usp=sharing'

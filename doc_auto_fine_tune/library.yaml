@@ -1,5 +1,5 @@
 ---
-title: finetune
+title: doc_auto_finetune
 version: 1.0.0
 description:  Document Automation Fine-tune
 icon: python
@@ -18,15 +18,15 @@ image: ai-workflows:beta-fraud-detection-classical-ml
 language: python3
 
 arguments:
-  - key: workspace
+  - key: data_dir
     type: 'categorical'
     values:
-      - 'output'
- - key: dataset-name
+      - '/input/doc_auto_preprocess/output/processed_data/'
+ - key: save_to
     type: 'categorical'
     values:
-      - 'dureader_vis_images_part'
-  - key: dataset-file
+      - 'output/dpr_models/my_dpr_model'
+  - key: dev_file
     type: 'categorical'
     values:
-      - 'docvqa_train.json'
+      - 'processed_train.json'
