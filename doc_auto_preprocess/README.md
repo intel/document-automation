@@ -2,6 +2,6 @@
 `preprocess` library is for preprocess pipeline to split document data
 
 ## Input Arguments:
-* `--config-path`: configuration directory for run preprocess
-* `--dataset-name`: id of dataset
-* `--dataset-file`: file name of dataset
+* `--data_dir`: data directory for running preprocess
+* `--train_file`: file name of dataset
+* `--save_to`: output path

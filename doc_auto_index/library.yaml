@@ -1,5 +1,5 @@
 ---
-title: index
+title: doc_auto_index
 version: 1.0.0
 description:  Document Automation Index
 icon: python
@@ -7,10 +7,10 @@ icon: python
 tags:
   - index
 
-command: python doc_auto_index.py
+command: bash run_index.sh
 requirements:
-  cpu: 2
-  memory: 7
+  cpu: 64
+  memory: 64
   gpu: 0
   hpu: 0
 
@@ -18,15 +18,19 @@ image: ai-workflows:beta-doc-automation-indexing
 language: python3
 
 arguments:
-  - key: workspace
+  - key: dataset_path
     type: 'categorical'
     values:
-      - 'output'
- - key: dataset-name
+      - '/input/sampled_dataset/docvqa_images'
+  - key: doc_encoder
     type: 'categorical'
     values:
-      - 'dureader_vis_images_part'
-  - key: dataset-file
+      - '/input/doc_auto_finetune/output/dpr_models/my_dpr_model/passage_encoder'
+  - key: query_encoder
     type: 'categorical'
     values:
-      - 'docvqa_train.json'
+      - '/input/doc_auto_finetune/output/dpr_models/my_dpr_model/query_encoder'
+  - key: paddleocr_path
+    type: 'categorical'
+    values:
+      - '/input/sampled_dataset/paddleocr'

@@ -1,6 +1,7 @@
 # Copyright (C) 2022-2023 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 import json
+import os
 from utils import get_split
 from utils import preprocess_single_image, apply_tesseract, postprocess_ocr_outputs_of_single_image
 from utils import get_all_image_path
@@ -350,7 +351,10 @@ if __name__ == "__main__":
     if cfg.encoder == 'dpr':
         print("process training file: {}".format(cfg.train_file))
         data_path=cfg.data_dir+cfg.train_file
+        
+        os.makedirs(cfg.save_to, exist_ok=True)
         save_path=cfg.save_to+'processed_train.json'
+        
         process_dataset_for_dpr(cfg, data_path, save_path, folder_nums=folder_nums)
         
         if cfg.process_dev==True:

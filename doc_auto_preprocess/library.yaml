@@ -9,8 +9,8 @@ tags:
 
 command: python src/process_dataset.py
 requirements:
-  cpu: 2
-  memory: 7
+  cpu: 64
+  memory: 64
   gpu: 0
   hpu: 0
 
@@ -18,15 +18,21 @@ image: ai-workflows:beta-doc-automation-fine-tuning
 language: python3
 
 arguments:
-  - key: workspace
+  - key: data_dir
     type: 'categorical'
     values:
-      - 'output'
- - key: dataset-name
+      - '/input/sampled_data_connector/sampled_dataset'
+  - key: dataset-name
     type: 'categorical'
     values:
       - 'dureader_vis_images_part'
-  - key: dataset-file
+  - key: save_to
     type: 'categorical'
     values:
-      - 'docvqa_train.json'
+      - 'output/processed_data/'
+  - key: train_file
+    type: 'categorical'
+    values:
+      - 'docvqa.json'
+
+      
