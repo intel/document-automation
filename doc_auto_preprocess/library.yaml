@@ -7,7 +7,7 @@ icon: python
 tags:
   - preprocess
 
-command: python src/process_dataset.py
+command: python preprocess_dataset.py
 requirements:
   cpu: 64
   memory: 64
