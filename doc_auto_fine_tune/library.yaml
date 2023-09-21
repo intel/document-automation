@@ -9,8 +9,8 @@ tags:
 
 command: python doc_auto_finetune.py
 requirements:
-  cpu: 24
-  memory: 48
+  cpu: 64
+  memory: 128
   gpu: 0
   hpu: 0
 
