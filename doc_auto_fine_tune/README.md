@@ -1,5 +1,7 @@
-## Train and Evaluate XGBoost with both edge features and GNN generated node features
-`xgb_training` library is for train and evaluate XGBoost model with edge features and GNN generated node features.
+## Document automation finetune. 
+`doc_auto_fine_tune` library is for finetunig DPR model with pretrained query_encoder and passage_encoder.
 
 ## Input Arguments:
-* `--config-path`: configuration directory for run xgb training
+* `--data_dir`: configure the data directory for run fine-tuning.
+* `--save_to`: configure the directory to save outputs of fine-tuning.
+* `--dev_file`: configure the dev file of fine-tuning.
