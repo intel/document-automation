@@ -3,82 +3,44 @@ flow: document_automation
 recurring: 
 next_run_utc: 
 tasks:
-- input: python3 fetch_data.py
+- input: bash doc_auto_index/run_index.sh
   params:
-  - key: dir_url
+  - key: dataset_path
     type: categorical
     min: 0
     max: 0
     scale: linear
     steps: 0
     values:
-    - https://drive.google.com/drive/folders/1V1h-n6_iNWKf3jgIKjxLsRAHAK0InQVA?usp=sharing
-  computes:
-  - SPR.AIA-SPR-small
-  - SPR.AIA-SPR-medium
-  - SPR.AIA-SPR-large
-  - SPR.small
-  - medium small
-  - SPR.medium
-  - SPR.Large
-  image: cnvrg:v5.0
-  description: sampled_data_connector
-  type: exec
-  git_commit: 
-  git_branch: 
-  mount_folders: []
-  icon: python
-  output_dir: ''
-  confirmation: false
-  standalone_mode: false
-  notify_on_error: false
-  notify_on_success: false
-  emails: []
-  objective: 
-  objective_goal: 
-  objective_function: min
-  max_jobs: -1
-  parallel_jobs: -1
-  algorithm: GridSearch
-  queue_slug: ildjaux68t7dxx7q55lc
-  title: sampled_data_connector
-  top: 275
-  left: 17
-  conditions: []
-  library: gdrive-connector
-  library_version: 1.0.0
-  commit: 1266c19d7fa1773ccfed130018cf1da900dd04d3
-- input: python doc_auto_fine_tune/doc_auto_finetune.py
-  params:
-  - key: data_dir
+    - "/input/sampled_dataset/docvqa_images"
+  - key: doc_encoder
     type: categorical
     min: 0
     max: 0
     scale: linear
     steps: 0
     values:
-    - "/input/doc_auto_preprocess/output/processed_data/"
-  - key: save_to
+    - "/input/doc_auto_finetune/output/dpr_models/my_dpr_model/passage_encoder"
+  - key: query_encoder
     type: categorical
     min: 0
     max: 0
     scale: linear
     steps: 0
     values:
-    - output/dpr_models/my_dpr_model
-  - key: dev_file
+    - "/input/doc_auto_finetune/output/dpr_models/my_dpr_model/query_encoder"
+  - key: paddleocr_path
     type: categorical
     min: 0
     max: 0
     scale: linear
     steps: 0
     values:
-    - processed_train.json
+    - "/input/sampled_dataset/paddleocr"
   computes:
   - SPR.AIA-SPR-massive
-  - SPR.AIA-SPR-large
-  image: ai-workflows:beta-doc-automation-fine-tuning
-  description: doc_auto_finetune
+  image: ai-workflows:beta-doc-automation-indexing
+  description: doc_auto_index
   type: exec
   git_commit: 
   git_branch: 
@@ -97,11 +59,48 @@ tasks:
   parallel_jobs: -1
   algorithm: GridSearch
   queue_slug: ildjaux68t7dxx7q55lc
-  title: doc_auto_finetune
-  top: 274
-  left: 561
+  title: doc_auto_index
+  top: 275
+  left: 874
   conditions: []
-  commit: 1266c19d7fa1773ccfed130018cf1da900dd04d3
+  commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
+- input: python sampled_data_connector/fetch_data.py
+  params:
+  - key: dir_url
+    type: categorical
+    min: 0
+    max: 0
+    scale: linear
+    steps: 0
+    values:
+    - https://drive.google.com/drive/folders/1V1h-n6_iNWKf3jgIKjxLsRAHAK0InQVA?usp=sharing
+  computes:
+  - SPR.AIA-SPR-small
+  image: cnvrg:v5.0
+  description: sampled_data_connector
+  type: exec
+  git_commit: 
+  git_branch: 
+  mount_folders: []
+  icon: 
+  output_dir: output
+  confirmation: false
+  standalone_mode: false
+  notify_on_error: false
+  notify_on_success: false
+  emails: []
+  objective: 
+  objective_goal: 
+  objective_function: min
+  max_jobs: -1
+  parallel_jobs: -1
+  algorithm: GridSearch
+  queue_slug: ildjaux68t7dxx7q55lc
+  title: sampled_data_connector
+  top: 274
+  left: 20
+  conditions: []
+  commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
 - input: python doc_auto_preprocess/preprocess_dataset.py
   params:
   - key: data_dir
@@ -111,7 +110,7 @@ tasks:
     scale: linear
     steps: 0
     values:
-    - "/input/sampled_data_connector/sampled_dataset"
+    - "/input/sampled_data_connector/sampled_dataset/"
   - key: save_to
     type: categorical
     min: 0
@@ -155,48 +154,40 @@ tasks:
   algorithm: GridSearch
   queue_slug: ildjaux68t7dxx7q55lc
   title: doc_auto_preprocess
-  top: 275
-  left: 269
+  top: 273
+  left: 293
   conditions: []
-  commit: 1266c19d7fa1773ccfed130018cf1da900dd04d3
-- input: bash doc_auto_index/run_index.sh
+  commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
+- input: python doc_auto_fine_tune/doc_auto_finetune.py
   params:
-  - key: dataset_path
+  - key: data_dir
     type: categorical
     min: 0
     max: 0
     scale: linear
     steps: 0
     values:
-    - "/input/sampled_dataset/docvqa_images"
-  - key: doc_encoder
+    - "/input/doc_auto_preprocess/output/processed_data/"
+  - key: save_to
     type: categorical
     min: 0
     max: 0
     scale: linear
     steps: 0
     values:
-    - "/input/doc_auto_finetune/output/dpr_models/my_dpr_model/passage_encoder"
-  - key: query_encoder
+    - output/dpr_models/my_dpr_model
+  - key: dev_file
     type: categorical
     min: 0
     max: 0
     scale: linear
     steps: 0
     values:
-    - "/input/doc_auto_finetune/output/dpr_models/my_dpr_model/query_encoder"
-  - key: paddleocr_path
-    type: categorical
-    min: 0
-    max: 0
-    scale: linear
-    steps: 0
-    values:
-    - "/input/sampled_dataset/paddleocr"
+    - processed_train.json
   computes:
-  - SPR.AIA-SPR-large
-  image: ai-workflows:beta-doc-automation-indexing
-  description: doc_auto_index
+  - SPR.AIA-SPR-massive
+  image: ai-workflows:beta-doc-automation-fine-tuning
+  description: doc_auto_finetune
   type: exec
   git_commit: 
   git_branch: 
@@ -215,11 +206,11 @@ tasks:
   parallel_jobs: -1
   algorithm: GridSearch
   queue_slug: ildjaux68t7dxx7q55lc
-  title: doc_auto_index
-  top: 267
-  left: 839
+  title: doc_auto_finetune
+  top: 275
+  left: 573
   conditions: []
-  commit: 1266c19d7fa1773ccfed130018cf1da900dd04d3
+  commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
 relations:
 - from: doc_auto_preprocess
   to: doc_auto_finetune

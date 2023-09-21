@@ -10,7 +10,7 @@ tags:
 command: bash run_index.sh
 requirements:
   cpu: 64
-  memory: 64
+  memory: 128
   gpu: 0
   hpu: 0
 
