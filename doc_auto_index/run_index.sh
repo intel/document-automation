@@ -102,7 +102,7 @@ apt-get clean
 
 ray start --node-ip-address='127.0.0.1' --head --dashboard-host='0.0.0.0' --dashboard-port=8265 --disable-usage-stats && \
 (python test_pocr.py || (mkdir -p /root/.paddleocr/whl && cp -r $paddleocr_path/* /root/.paddleocr/whl/)) && \
-python doc_auto_index/doc_auto_index.py --retrieval_method all --db postgresql://postgres:postgres@localhost:5432/haystack \
+python doc_auto_index.py --retrieval_method all --db postgresql://postgres:postgres@localhost:5432/haystack \
 --esdb localhost --preprocess grayscale --ocr_engine paddleocr --max_seq_len_passage 500 --overlap 10 --min_chars 5 \
 --query_encoder $query_encoder --doc_encoder $doc_encoder \
 --index_file $OUTPUT_PATH/index_files/faiss-indexfile.faiss --index_name dureadervis-documents --writing_bs 10000 --embedding_bs 50 \
