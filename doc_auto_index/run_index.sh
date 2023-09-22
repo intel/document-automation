@@ -99,7 +99,8 @@ su - postgres -c "psql -c \"ALTER USER postgres WITH PASSWORD 'postgres'\""
 
 echo "PostgreSQL is ready."
 apt-get clean
-
+SCRIPT_DIR=$(dirname "$0")
+cd "$SCRIPT_DIR"
 ray start --node-ip-address='127.0.0.1' --head --dashboard-host='0.0.0.0' --dashboard-port=8265 --disable-usage-stats && \
 (python test_pocr.py || (mkdir -p /root/.paddleocr/whl && cp -r $paddleocr_path/* /root/.paddleocr/whl/)) && \
 python doc_auto_index.py --retrieval_method all --db postgresql://postgres:postgres@localhost:5432/haystack \
