@@ -3,7 +3,7 @@ flow: document_automation
 recurring: 
 next_run_utc: 
 tasks:
-- input: bash doc_auto_index/run_index.sh
+- input: bash run_index.sh
   params:
   - key: dataset_path
     type: categorical
@@ -12,7 +12,7 @@ tasks:
     scale: linear
     steps: 0
     values:
-    - "/input/sampled_dataset/docvqa_images"
+    - "/input/sampled_data_connector/sampled_dataset/docvqa_images"
   - key: doc_encoder
     type: categorical
     min: 0
@@ -36,7 +36,7 @@ tasks:
     scale: linear
     steps: 0
     values:
-    - "/input/sampled_dataset/paddleocr"
+    - "/input/sampled_data_connector/sampled_dataset/paddleocr"
   computes:
   - SPR.AIA-SPR-massive
   image: ai-workflows:beta-doc-automation-indexing
@@ -64,7 +64,7 @@ tasks:
   left: 874
   conditions: []
   commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
-- input: python sampled_data_connector/fetch_data.py
+- input: python fetch_data.py
   params:
   - key: dir_url
     type: categorical
@@ -101,7 +101,7 @@ tasks:
   left: 20
   conditions: []
   commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
-- input: python doc_auto_preprocess/preprocess_dataset.py
+- input: python preprocess_dataset.py
   params:
   - key: data_dir
     type: categorical
@@ -158,7 +158,7 @@ tasks:
   left: 293
   conditions: []
   commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
-- input: python doc_auto_fine_tune/doc_auto_finetune.py
+- input: python doc_auto_finetune.py
   params:
   - key: data_dir
     type: categorical
@@ -207,8 +207,8 @@ tasks:
   algorithm: GridSearch
   queue_slug: ildjaux68t7dxx7q55lc
   title: doc_auto_finetune
-  top: 275
-  left: 573
+  top: 287
+  left: 566
   conditions: []
   commit: 7134d7bfe126ff85950cf42ae7a6d57cd5942f0a
 relations:
