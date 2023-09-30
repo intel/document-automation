@@ -5,7 +5,7 @@ description:  Run Preprocess for Document Automation
 icon: python
 
 tags:
-  - preprocess
+  - training
 
 command: python preprocess_dataset.py
 requirements:
@@ -21,11 +21,7 @@ arguments:
   - key: data_dir
     type: 'categorical'
     values:
-      - '/input/sampled_data_connector/sampled_dataset'
-  - key: dataset-name
-    type: 'categorical'
-    values:
-      - 'dureader_vis_images_part'
+      - '/input/doc_auto_prepare_data/sampled_dataset'
   - key: save_to
     type: 'categorical'
     values:

@@ -1,5 +1,5 @@
 ---
-title: sampled_data_connector
+title: doc_auto_prepare_data
 version: 1.0.0
 description:  Download dataset from public Google Drive folder 
 icon: python

@@ -21,7 +21,7 @@ arguments:
   - key: dataset_path
     type: 'categorical'
     values:
-      - '/input/sampled_data_connector/sampled_dataset/docvqa_images'
+      - '/input/doc_auto_prepare_data/sampled_dataset/docvqa_images'
   - key: doc_encoder
     type: 'categorical'
     values:
@@ -33,4 +33,4 @@ arguments:
   - key: paddleocr_path
     type: 'categorical'
     values:
-      - '/input/sampled_data_connector/sampled_dataset/paddleocr'
+      - '/input/doc_auto_prepare_data/sampled_dataset/paddleocr'
