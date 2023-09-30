@@ -1,0 +1,170 @@
+---
+title: Document Automation
+version: 1.0.0 # Required
+description:  An end-to-end reference solution for building an AI-augmented multi-modal semantic search system for document images.
+long_description: This blueprint can help enterprises gain more insights from their document archives more quickly and easily using natural language queries using Intel® AI Analytics Toolkit components.
+
+# Optional properties for crediting authors
+author: "Intel"
+author_email: "info@cnvrg.io"
+
+# At least one tag [inference, training, data] must be present
+tags:
+  - training
+
+tasks:
+  - title: doc_auto_prepare_data
+    top: 270
+    left: 20
+
+    # Type must be according to the flow task conventions (data, exec, deploy)
+    type: exec
+
+    # The library data
+    library: doc_auto_prepare_data
+    library_version: 1.0.0
+    # The flattened library parameters (in this case we have training library)
+    command: python fetch_data.py
+
+    requirements:
+      cpu: 4
+      memory: 8
+      gpu: 0
+      hpu: 0
+
+    image: cnvrg:v5.0
+    language: python3
+
+    # The "arguments" property changes to "params", rest remains the same.
+    # Params in the blueprint yaml can be used to override the arguments in the library.
+    params:
+      - key: dir_url
+        type: 'categorical'
+        values:
+          - 'https://drive.google.com/drive/folders/1V1h-n6_iNWKf3jgIKjxLsRAHAK0InQVA?usp=sharing'
+
+  - title: doc_auto_preprocess
+      top: 270
+      left: 290
+
+      # Type must be according to the flow task conventions (data, exec, deploy)
+      type: exec
+
+      # The library data
+      library: doc_auto_preprocess
+      library_version: 1.0.0
+      # The flattened library parameters (in this case we have training library)
+      command: python preprocess_dataset.py
+
+      requirements:
+        cpu: 64
+        memory: 64
+        gpu: 0
+        hpu: 0
+
+      image: ai-workflows:beta-doc-automation-fine-tuning
+      language: python3
+
+      # The "arguments" property changes to "params", rest remains the same.
+      # Params in the blueprint yaml can be used to override the arguments in the library.
+      params:
+        - key: data_dir
+          type: 'categorical'
+          values:
+            - '/input/doc_auto_prepare_data/sampled_dataset'
+        - key: save_to
+          type: 'categorical'
+          values:
+            - 'output/processed_data/'
+        - key: train_file
+          type: 'categorical'
+          values:
+            - 'docvqa.json'
+
+  - title: doc_auto_finetune
+      top: 270
+      left: 560
+
+      # Type must be according to the flow task conventions (data, exec, deploy)
+      type: exec
+
+      # The library data
+      library: doc_auto_fine_tune
+      library_version: 1.0.0
+      # The flattened library parameters (in this case we have training library)
+      command: python doc_auto_finetune.py
+
+      requirements:
+        cpu: 64
+        memory: 128
+        gpu: 0
+        hpu: 0
+
+      image: ai-workflows:beta-doc-automation-fine-tuning
+      language: python3
+
+      # The "arguments" property changes to "params", rest remains the same.
+      # Params in the blueprint yaml can be used to override the arguments in the library.
+      params:
+        - key: data_dir
+          type: 'categorical'
+          values:
+            - '/input/doc_auto_preprocess/output/processed_data/'
+        - key: save_to
+          type: 'categorical'
+          values:
+            - 'output/dpr_models/my_dpr_model'
+        - key: dev_file
+          type: 'categorical'
+          values:
+            - 'processed_train.json'
+
+  - title: doc_auto_index
+      top: 270
+      left: 870
+
+      # Type must be according to the flow task conventions (data, exec, deploy)
+      type: exec
+
+      # The library data
+      library: doc_auto_index
+      library_version: 1.0.0
+      # The flattened library parameters (in this case we have training library)
+      command: bash run_index.sh
+
+      requirements:
+        cpu: 64
+        memory: 128
+        gpu: 0
+        hpu: 0
+
+      image: ai-workflows:beta-doc-automation-indexing
+      language: python3
+
+      # The "arguments" property changes to "params", rest remains the same.
+      # Params in the blueprint yaml can be used to override the arguments in the library.
+      params:
+        - key: dataset_path
+          type: 'categorical'
+          values:
+            - '/input/doc_auto_prepare_data/sampled_dataset/docvqa_images'
+        - key: doc_encoder
+          type: 'categorical'
+          values:
+            - '/input/doc_auto_finetune/output/dpr_models/my_dpr_model/passage_encoder'
+        - key: query_encoder
+          type: 'categorical'
+          values:
+            - '/input/doc_auto_finetune/output/dpr_models/my_dpr_model/query_encoder'
+        - key: paddleocr_path
+          type: 'categorical'
+          values:
+            - '/input/doc_auto_prepare_data/sampled_dataset/paddleocr'
+
+relations:
+- from: doc_auto_preprocess
+  to: doc_auto_finetune
+- from: doc_auto_finetune
+  to: doc_auto_index
+- from: doc_auto_prepare_data
+  to: doc_auto_preprocess

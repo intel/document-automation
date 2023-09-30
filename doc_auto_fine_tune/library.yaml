@@ -5,7 +5,7 @@ description:  Document Automation Fine-tune
 icon: python
 
 tags:
-  - finetune
+  - training
 
 command: python doc_auto_finetune.py
 requirements:
@@ -14,7 +14,7 @@ requirements:
   gpu: 0
   hpu: 0
 
-image: ai-workflows:beta-fraud-detection-classical-ml
+image: ai-workflows:beta-doc-automation-fine-tuning
 language: python3
 
 arguments:
@@ -22,7 +22,7 @@ arguments:
     type: 'categorical'
     values:
       - '/input/doc_auto_preprocess/output/processed_data/'
- - key: save_to
+  - key: save_to
     type: 'categorical'
     values:
       - 'output/dpr_models/my_dpr_model'
