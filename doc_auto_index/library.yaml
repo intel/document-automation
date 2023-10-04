@@ -7,7 +7,7 @@ icon: python
 tags:
   - training
 
-command: bash run_index.sh
+command: python run_index.py
 requirements:
   cpu: 64
   memory: 128
