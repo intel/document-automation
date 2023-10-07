@@ -1,55 +1,186 @@
 #!/bin/bash
-ARGS=`getopt -a -o D:O:Q:d:P -l dataset_path:,output_path:,query_encoder:,doc_encoder:,paddleocr_path: -- "$@"`
-# function usage() {
-#     echo  'help'
-# }
-# [ $? -ne 0 ] && usage
-#set -- "${ARGS}"
-eval set -- "${ARGS}"
-while true
+# default parameters 
+retrieval_method="all"
+db="postgresql://postgres:postgres@localhost:5432/haystack"
+esdb="localhost"
+preprocess="grayscale"
+ocr_engine="paddleocr"
+max_seq_len_passage=500
+overlap=10
+min_chars=5
+query_encoder="query_encoder"
+doc_encoder="doc_encoder"
+index_file="OUTPUT_PATH/index_files/faiss-indexfile.faiss"
+index_name="dureadervis-documents"
+writing_bs=10000
+embedding_bs=50
+preprocess_min_actors=8
+preprocess_max_actors=20
+embedding_min_actors=4
+embedding_max_actors=8
+preprocess_cpus_per_actor=4
+writing_cpus_per_actor=4
+embedding_cpus_per_actor=20
+split_doc=false
+add_doc=false
+embed_doc=false
+dataset_path="dataset_path"
+
+# accept parameter passed by users
+while [[ $# -gt 0 ]]
 do
-    case "$1" in
-        -D|--dataset_path)
-            dataset_path="$2"
-            shift
-            ;;
-        -Q|--query_encoder)
-            query_encoder="$2"
-            shift
-            ;;
-        -d|--doc_encoder)
-            doc_encoder="$2"
-            shift
-            ;;
-        -O|--output_path)
-            output_path="$2"
-            shift
-            ;;
-        -P|--paddleocr_path)
-            paddleocr_path="$2"
-            shift
-            ;;
-        --)
-            shift;
-            break;;
-    esac
-shift
+key="$1"
+
+case $key in
+    --retrieval_method)
+    retrieval_method="$2"
+    shift
+    shift
+    ;;
+    --db)
+    db="$2"
+    shift
+    shift
+    ;;
+    --esdb)
+    esdb="$2"
+    shift
+    shift
+    ;;
+    --preprocess)
+    preprocess="$2"
+    shift
+    shift
+    ;;
+    --ocr_engine)
+    ocr_engine="$2"
+    shift
+    shift
+    ;;
+    --max_seq_len_passage)
+    max_seq_len_passage="$2"
+    shift
+    shift
+    ;;
+    --overlap)
+    overlap="$2"
+    shift
+    shift
+    ;;
+    --min_chars)
+    min_chars="$2"
+    shift
+    shift
+    ;;
+    --query_encoder)
+    query_encoder="$2"
+    shift
+    shift
+    ;;
+    --doc_encoder)
+    doc_encoder="$2"
+    shift
+    shift
+    ;;
+    --index_file)
+    index_file="$2"
+    shift
+    shift
+    ;;
+    --index_name)
+    index_name="$2"
+    shift
+    shift
+    ;;
+    --writing_bs)
+    writing_bs="$2"
+    shift
+    shift
+    ;;
+    --embedding_bs)
+    embedding_bs="$2"
+    shift
+    shift
+    ;;
+    --preprocess_min_actors)
+    preprocess_min_actors="$2"
+    shift
+    shift
+    ;;
+    --preprocess_max_actors)
+    preprocess_max_actors="$2"
+    shift
+    shift
+    ;;
+    --embedding_min_actors)
+    embedding_min_actors="$2"
+    shift
+    shift
+    ;;
+    --embedding_max_actors)
+    embedding_max_actors="$2"
+    shift
+    shift
+    ;;
+    --preprocess_cpus_per_actor)
+    preprocess_cpus_per_actor="$2"
+    shift
+    shift
+    ;;
+    --writing_cpus_per_actor)
+    writing_cpus_per_actor="$2"
+    shift
+    shift
+    ;;
+    --embedding_cpus_per_actor)
+    embedding_cpus_per_actor="$2"
+    shift
+    shift
+    ;;
+    --split_doc)
+    split_doc=true
+    shift
+    ;;
+    --add_doc)
+    add_doc=true
+    shift
+    ;;
+    --embed_doc)
+    embed_doc=true
+    shift
+    ;;
+    --dataset_path)
+    dataset_path="$2"
+    shift
+    shift
+    ;;
+    *)
+    shift
+    ;;
+esac
 done
 
-if [ -z "$query_encoder" ]; then
-    echo "Argument --query_encoder is empty or not provided"
-    exit 1
+# Construct the command to be executed
+cmd="python doc_auto_index.py --retrieval_method $retrieval_method --db $db --esdb $esdb --preprocess $preprocess --ocr_engine $ocr_engine \
+--max_seq_len_passage $max_seq_len_passage --overlap $overlap --min_chars $min_chars --query_encoder $query_encoder --doc_encoder $doc_encoder \
+--index_file $index_file --index_name $index_name --writing_bs $writing_bs --embedding_bs $embedding_bs \
+--preprocess_min_actors $preprocess_min_actors --preprocess_max_actors $preprocess_max_actors --embedding_min_actors $embedding_min_actors \
+--embedding_max_actors $embedding_max_actors --preprocess_cpus_per_actor $preprocess_cpus_per_actor \
+--writing_cpus_per_actor $writing_cpus_per_actor --embedding_cpus_per_actor $embedding_cpus_per_actor --dataset_path $dataset_path"
+
+
+if [ "$split_doc" = "true" ]; then
+    cmd="$cmd --split_doc"
 fi
 
-if [ -z "$doc_encoder" ]; then
-    echo "Argument --doc_encoder is empty or not provided"
-    exit 1
+if [ "$add_doc" = "true" ]; then
+    cmd="$cmd --add_doc"
 fi
 
-if [ -z "$dataset_path" ]; then
-    echo "Argument --dataset_path is empty or not provided"
-    exit 1
+if [ "$embed_doc" = "true" ]; then
+    cmd="$cmd --embed_doc"
 fi
+
 
 export WORKSPACE=$(realpath .)
 export OUTPUT_PATH=${output_path:-$WORKSPACE/output}
@@ -103,9 +234,4 @@ SCRIPT_DIR=$(dirname "$0")
 cd "$SCRIPT_DIR"
 ray start --node-ip-address='127.0.0.1' --head --dashboard-host='0.0.0.0' --dashboard-port=8265 --disable-usage-stats && \
 (python test_pocr.py || (mkdir -p /root/.paddleocr/whl && cp -r $paddleocr_path/* /root/.paddleocr/whl/)) && \
-python doc_auto_index.py --retrieval_method all --db postgresql://postgres:postgres@localhost:5432/haystack \
---esdb localhost --preprocess grayscale --ocr_engine paddleocr --max_seq_len_passage 500 --overlap 10 --min_chars 5 \
---query_encoder $query_encoder --doc_encoder $doc_encoder \
---index_file $OUTPUT_PATH/index_files/faiss-indexfile.faiss --index_name dureadervis-documents --writing_bs 10000 --embedding_bs 50 \
---preprocess_min_actors 8 --preprocess_max_actors 20 --embedding_min_actors 4 --embedding_max_actors 8 --preprocess_cpus_per_actor 4 \
---writing_cpus_per_actor 4 --embedding_cpus_per_actor 20 --split_doc --add_doc --embed_doc --dataset_path $dataset_path #--toy_example
+echo $cmd
