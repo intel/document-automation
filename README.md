@@ -28,7 +28,7 @@ This solution implement and demonstrate a complete end-to-end solution that help
 The architecture of the reference use case is shown in the figure below. It is composed of 3 pipelines: 
 * Single-node Dense Passage Retriever (DPR) fine tuning pipeline
 * Image-to-document indexing pipeline (can be run on either single node or distributed on multiple nodes)
-    * The Postgres and Elasticsearch will be launched automatically in the container for indexing.
+    * By default, the Postgres and Elasticsearch will be launched automatically in the container for indexing. In addition, developers can specify their own service by passing parameters. 
 * Single-node deployment pipeline
 </br>
 
