@@ -32,7 +32,7 @@ The architecture of the reference use case is shown in the figure below. It is c
 * Single-node deployment pipeline
 </br>
 
-![usecase-architecture](assets/usecase-architecture.PNG)
+![usecase-architecture](https://raw.githubusercontent.com/intel/document-automation/blueprint/assets/usecase-architecture.PNG)
 
 ## Solution Technical Details
 * **Developer productivity**: The 3 pipelines in this reference use case are all containerized and allow customization through either command line arguments or config files. Developers can bring their own data and jump start development very easily. 
